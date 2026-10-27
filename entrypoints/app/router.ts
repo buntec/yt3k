@@ -6,6 +6,7 @@ export const ROUTES = {
   subscriptions: 'Subs',
   feed: 'Feed',
   'watch-later': 'Watch later',
+  history: 'History',
 } as const;
 
 export type Route = keyof typeof ROUTES;

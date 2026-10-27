@@ -23,7 +23,7 @@ export interface Video {
   progress?: number;
 }
 
-/** A video in a list on YouTube (Home, Watch later), as YouTube describes it there. */
+/** A video in a list on YouTube (Home, Watch later, History), as YouTube describes it there. */
 export interface ListedVideo {
   id: string;
   title: string;
@@ -36,13 +36,16 @@ export interface ListedVideo {
   details: MetadataPart[];
   /** How much of the video the user has watched, in percent */
   progress?: number;
-  /** Feedback YouTube offers in the video's menu (Home only) */
+  /** Feedback YouTube offers in the video's menu (Home and History) */
   feedback: {
     notInterested?: FeedbackAction;
     dontRecommendChannel?: FeedbackAction;
+    removeFromHistory?: FeedbackAction;
   };
   /** The edit that removes this entry from Watch later (Watch later only) */
   watchLaterRemoval?: PlaylistEdit;
+  /** The day YouTube lists it under, e.g. "Today" or "Oct 20" (History only) */
+  watchedOn?: string;
 }
 
 /** A change to a playlist, as YouTube's own buttons describe it */
@@ -292,12 +295,7 @@ function parseLockup(lockup: any): ListedVideo | undefined {
       ?.startPercent,
     channel: channelTitle && {
       title: channelTitle,
-      url:
-        browse?.browseId &&
-        new URL(
-          browse.canonicalBaseUrl ?? `/channel/${browse.browseId}`,
-          'https://www.youtube.com',
-        ).href,
+      url: channelUrl(browse),
       avatar: absoluteUrl(findAll(metadata.image, 'avatarViewModel')[0]?.image?.sources?.[0]?.url),
     },
     details: parts
@@ -313,8 +311,9 @@ function parseLockup(lockup: any): ListedVideo | undefined {
 }
 
 /**
- * The "Not interested" and "Don't recommend channel" items of a video's menu.
- * They are told apart by icon, since their labels are in the user's language.
+ * The "Not interested", "Don't recommend channel" and "Remove from watch
+ * history" items of a video's menu. They are told apart by icon, since their
+ * labels are in the user's language.
  */
 function parseFeedbackActions(menu: unknown): ListedVideo['feedback'] {
   const feedback: ListedVideo['feedback'] = {};
@@ -328,6 +327,7 @@ function parseFeedbackActions(menu: unknown): ListedVideo['feedback'] {
     const icon = findAll(item.leadingImage, 'imageName')[0];
     if (icon === 'HIDE') feedback.notInterested = action;
     else if (icon === 'REMOVE') feedback.dontRecommendChannel = action;
+    else if (icon === 'DELETE') feedback.removeFromHistory = action;
   }
   return feedback;
 }
@@ -409,9 +409,7 @@ function parsePlaylistVideo(renderer: any): ListedVideo {
     duration: renderer.lengthText?.simpleText,
     channel: byline?.text && {
       title: byline.text,
-      url:
-        browse?.browseId &&
-        new URL(browse.canonicalBaseUrl ?? `/channel/${browse.browseId}`, ORIGIN).href,
+      url: channelUrl(browse),
     },
     // E.g. "34K", " • ", "7 years ago": the view count gets the play icon
     // it has on Home.
@@ -465,6 +463,113 @@ async function editPlaylist(edit: PlaylistEdit) {
   if (status !== 200 || (result && result !== 'STATUS_SUCCEEDED')) {
     throw new Error(`Changing Watch later failed (${status})`);
   }
+}
+
+/** The logged-in user's watch history, newest first, read from the data embedded in its page. */
+export async function fetchHistory(): Promise<VideoListPage> {
+  const res = await fetch('https://www.youtube.com/feed/history', { credentials: 'include' });
+  if (!res.ok) throw new Error(`Loading history failed (${res.status})`);
+
+  const html = await res.text();
+  rememberClientConfig(html);
+  return parseHistoryPage(html);
+}
+
+/** The part of the history that follows the one `continuation` came with. */
+export async function fetchMoreHistory(continuation: string): Promise<VideoListPage> {
+  const { status, data } = await innertubeRequest('browse', { continuation });
+  if (status !== 200) throw new Error(`Loading more history failed (${status})`);
+  return parseHistoryContinuation(data);
+}
+
+/** The videos in the HTML of YouTube's History page. */
+export function parseHistoryPage(html: string): VideoListPage {
+  const data = initialData(html);
+  if (!data) throw new Error('History not found on YouTube page');
+  return parseHistoryItems(findAll(data, 'sectionListRenderer')[0]?.contents);
+}
+
+/** The videos in YouTube's API response for the next part of the history. */
+export function parseHistoryContinuation(data: unknown): VideoListPage {
+  return parseHistoryItems(findAll(data, 'continuationItems').flat());
+}
+
+/**
+ * History comes in sections, one per day. A day can go on in the next part,
+ * in a section with the same heading. Shorts, in shelves, are left out, and a
+ * video watched on several days is only kept on the latest.
+ */
+function parseHistoryItems(items: unknown): VideoListPage {
+  const list: any[] = Array.isArray(items) ? items : [];
+  const seen = new Set<string>();
+  const videos = list
+    .map((item) => item.itemSectionRenderer)
+    .filter((section) => section)
+    .flatMap((section): ListedVideo[] => {
+      const title = section.header?.itemSectionHeaderRenderer?.title;
+      const watchedOn = title?.simpleText ?? title?.runs?.map((run: any) => run.text).join('');
+      return (section.contents ?? [])
+        .map((item: any): ListedVideo | undefined => {
+          const lockup = item.lockupViewModel;
+          // Most entries are lockups like on Home, but now and then one is
+          // described the older way.
+          if (lockup?.contentType === 'LOCKUP_CONTENT_TYPE_VIDEO') return parseLockup(lockup);
+          if (item.videoRenderer?.videoId) return parseVideoRenderer(item.videoRenderer);
+          return undefined;
+        })
+        .filter((video: ListedVideo | undefined) => video !== undefined)
+        .map((video: ListedVideo) => ({ ...video, watchedOn }));
+    })
+    .filter((video) => {
+      if (seen.has(video.id)) return false;
+      seen.add(video.id);
+      return true;
+    });
+  return {
+    videos,
+    continuation: findAll(
+      list.filter((item) => item.continuationItemRenderer),
+      'continuationCommand',
+    ).at(-1)?.token,
+  };
+}
+
+function parseVideoRenderer(renderer: any): ListedVideo {
+  const byline = renderer.shortBylineText?.runs?.[0];
+  const views = renderer.shortViewCountText;
+  const removal = findAll(
+    findAll(renderer.menu, 'menuServiceItemRenderer').find(
+      (item) => item.icon?.iconType === 'DELETE',
+    ),
+    'feedbackEndpoint',
+  )[0];
+  return {
+    id: renderer.videoId,
+    title: renderer.title?.runs?.map((run: any) => run.text).join('') ?? '',
+    thumbnail:
+      absoluteUrl(renderer.thumbnail?.thumbnails?.at(-1)?.url) ??
+      `https://i.ytimg.com/vi/${renderer.videoId}/mqdefault.jpg`,
+    duration: renderer.lengthText?.simpleText,
+    channel: byline?.text && {
+      title: byline.text,
+      url: channelUrl(byline.navigationEndpoint?.browseEndpoint),
+      avatar: absoluteUrl(
+        findAll(renderer.channelThumbnailSupportedRenderers, 'thumbnails')[0]?.[0]?.url,
+      ),
+    },
+    // Like the view count of a lockup: e.g. "1.9K" with "1.9K views" as label
+    details: views?.simpleText
+      ? [
+          {
+            text: views.simpleText,
+            label: views.accessibility?.accessibilityData?.label,
+            hasPlayIcon: true,
+          },
+        ]
+      : [],
+    progress: findAll(renderer.thumbnailOverlays, 'percentDurationWatched')[0],
+    feedback: removal?.feedbackToken ? { removeFromHistory: { token: removal.feedbackToken } } : {},
+  };
 }
 
 /** Unsubscribe from a channel. */
@@ -636,6 +741,14 @@ function parseClientConfig(html: string): ClientConfig | undefined {
     clientName: config.INNERTUBE_CONTEXT_CLIENT_NAME?.toString(),
     clientVersion: config.INNERTUBE_CONTEXT_CLIENT_VERSION,
   };
+}
+
+/** The link to a channel, from the endpoint YouTube's own link to it has */
+function channelUrl(browse: any): string | undefined {
+  return (
+    browse?.browseId &&
+    new URL(browse.canonicalBaseUrl ?? `/channel/${browse.browseId}`, ORIGIN).href
+  );
 }
 
 function absoluteUrl(url: string | undefined) {

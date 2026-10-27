@@ -5,6 +5,7 @@ import { Theme } from '@astryxdesign/core/theme';
 import { TopNav, TopNavHeading, TopNavItem } from '@astryxdesign/core/TopNav';
 import { defaultThemeSlug, themes } from '@/astryx-themes';
 import { FeedPage } from './feed/FeedPage';
+import { HistoryPage } from './history/HistoryPage';
 import { PlayerProvider } from './player';
 import { ROUTES, type Route, routeHref, useRoute } from './router';
 import { SubscriptionsPage } from './subscriptions/SubscriptionsPage';
@@ -15,6 +16,7 @@ const PAGES: Record<Route, () => React.ReactNode> = {
   subscriptions: SubscriptionsPage,
   feed: FeedPage,
   'watch-later': WatchLaterPage,
+  history: HistoryPage,
 };
 
 export function App() {

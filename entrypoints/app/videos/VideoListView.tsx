@@ -82,22 +82,29 @@ export function VideoListView({
             )
           ) : (
             <VStack gap={8}>
-              <Grid columns={{ minWidth: 300, max: 4 }} columnGap={4} rowGap={8}>
-                {videos.map((video) => {
-                  const removal = removals[video.id];
-                  if (removal) {
-                    return (
-                      <RemovedCard
-                        key={video.id}
-                        removal={removal}
-                        onUndo={() => void list.undoRemoval(video.id)}
-                      />
-                    );
-                  }
-                  if (video.channel?.url && hiddenChannels.has(video.channel.url)) return null;
-                  return <VideoCard key={video.id} video={video} actions={actions} />;
-                })}
-              </Grid>
+              {groupByDay(videos).map((group, i) => (
+                <VStack key={i} as="section" gap={4}>
+                  {group.day && <Heading level={2}>{group.day}</Heading>}
+                  <Grid columns={{ minWidth: 300, max: 4 }} columnGap={4} rowGap={8}>
+                    {group.videos.map((video) => {
+                      const removal = removals[video.id];
+                      if (removal) {
+                        return (
+                          <RemovedCard
+                            key={video.id}
+                            removal={removal}
+                            onUndo={() => void list.undoRemoval(video.id)}
+                          />
+                        );
+                      }
+                      if (video.channel?.url && hiddenChannels.has(video.channel.url)) {
+                        return null;
+                      }
+                      return <VideoCard key={video.id} video={video} actions={actions} />;
+                    })}
+                  </Grid>
+                </VStack>
+              ))}
               {continuation && (
                 <ShowMore list={list} loading={loading} hasFailed={error !== undefined} />
               )}
@@ -107,6 +114,21 @@ export function VideoListView({
       }
     />
   );
+}
+
+/**
+ * Runs of videos watched on the same day (History), headed by that day. Lists
+ * without days are one group without heading. A day can go on in the next
+ * page, so groups follow the videos rather than YouTube's pages.
+ */
+function groupByDay(videos: ListedVideo[]) {
+  const groups: { day?: string; videos: ListedVideo[] }[] = [];
+  for (const video of videos) {
+    const last = groups.at(-1);
+    if (last && last.day === video.watchedOn) last.videos.push(video);
+    else groups.push({ day: video.watchedOn, videos: [video] });
+  }
+  return groups;
 }
 
 /**

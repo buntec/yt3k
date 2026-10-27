@@ -2,7 +2,8 @@
 // See README.md in this folder for how to use it.
 //
 // Keeps a few items of each kind from the Home page, the next page of Home,
-// the subscriptions page, a subscribed channel's Videos tab and Watch later, then replaces titles, names, IDs,
+// the subscriptions page, a subscribed channel's Videos tab, Watch later and
+// History (and its next part), then replaces titles, names, IDs,
 // URLs and tokens with placeholders and scrambles the digits of counts, ages
 // and durations. Clipboard writes need a click, so it adds a button for that.
 
@@ -40,6 +41,7 @@ const SAFE = [
   /^[A-Z][A-Z0-9_]*$/, // enums like LOCKUP_CONTENT_TYPE_VIDEO
   /^(LIVE|SHORTS|New|Members only|Premiere|Upcoming|No views)$/i,
   /^\s*[·•]?\s*$/, // separators
+  /^(Today|Yesterday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)$/, // History's days
 ];
 // Counts, ages and durations: the format is kept, the digits scrambled.
 const NUMERIC = [
@@ -141,6 +143,40 @@ function pickFeedItems(items) {
     );
 }
 
+/**
+ * A few entries of each kind from History's day sections: lockups, the older
+ * videoRenderer and a Shorts shelf, from the first `count` sections and those
+ * with the rarer kinds.
+ */
+function pickHistoryItems(items, count) {
+  const sections = items.filter((i) => i.itemSectionRenderer);
+  const has = (kind) => sections.find((s) => s.itemSectionRenderer.contents.some((c) => c[kind]));
+  const picked = new Set([...sections.slice(0, count), has('videoRenderer'), has('reelShelfRenderer')]);
+  return items
+    .filter((i) => picked.has(i) || i.continuationItemRenderer)
+    .map((i) => {
+      if (!i.itemSectionRenderer) return i;
+      const contents = i.itemSectionRenderer.contents;
+      const picks = new Set([
+        ...contents.filter((c) => c.lockupViewModel).slice(0, 3),
+        contents.find((c) => c.videoRenderer),
+        contents.find((c) => c.reelShelfRenderer),
+      ]);
+      return {
+        itemSectionRenderer: {
+          ...i.itemSectionRenderer,
+          contents: contents
+            .filter((c) => picks.has(c))
+            .map((c) =>
+              c.reelShelfRenderer
+                ? { reelShelfRenderer: { ...c.reelShelfRenderer, items: c.reelShelfRenderer.items.slice(0, 2) } }
+                : c,
+            ),
+        },
+      };
+    });
+}
+
 /** Same request as innertubeRequest() in utils/youtube.ts, made from a youtube.com page */
 async function innertubeRequest(endpoint, body, { language } = {}) {
   const cookie = (name) =>
@@ -237,7 +273,32 @@ async function capture() {
     },
   };
 
-  return anonymize({ home, homeContinuation, subscriptions, channelVideos, watchLater });
+  // History: a few day sections, and a few of the next part.
+  const historyData = initialData(
+    await (await fetch('/feed/history', { credentials: 'include' })).text(),
+  );
+  const historyItems = findAll(historyData, 'sectionListRenderer')[0].contents;
+  const history = { contents: { sectionListRenderer: { contents: pickHistoryItems(historyItems, 2) } } };
+  const moreHistory = await innertubeRequest('browse', {
+    continuation: findAll(historyItems.filter((i) => i.continuationItemRenderer), 'continuationCommand').at(-1).token,
+  });
+  const historyContinuation = {
+    onResponseReceivedActions: moreHistory.onResponseReceivedActions.map((action) => {
+      const append = action.appendContinuationItemsAction;
+      if (!append) return action;
+      return { appendContinuationItemsAction: { ...append, continuationItems: pickHistoryItems(append.continuationItems, 1) } };
+    }),
+  };
+
+  return anonymize({
+    home,
+    homeContinuation,
+    subscriptions,
+    channelVideos,
+    watchLater,
+    history,
+    historyContinuation,
+  });
 }
 
 const fixtures = JSON.stringify(await capture());

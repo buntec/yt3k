@@ -18,8 +18,12 @@ The toolbar button opens the yt3k page, a single-page app with these tabs:
   and can be undone.
 - **Watch later**: the Watch later playlist, with **Remove from Watch later** in
   each video's menu, which can be undone too.
+- **History**: the videos you watched, newest first under the day you watched
+  them (Shorts are left out). Each video's menu has **Save to Watch later** and
+  **Remove from watch history**, which can't be undone, like on YouTube. It loads
+  again each time you open the tab.
 
-In Feed and Watch later, scrolling to the bottom loads the next batch, and partly
+In Feed, Watch later and History, scrolling to the bottom loads the next batch, and partly
 watched videos show how far you got, like on YouTube.
 
 Clicking a video plays it in an embedded player on the page; videos that can't be

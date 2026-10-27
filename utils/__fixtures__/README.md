@@ -12,10 +12,14 @@ random, and colors taken from thumbnails are left out.
 - `channel-videos.json`: the video grid of YouTube's API response for a
   subscribed channel's Videos tab, in English
 - `watch-later.json`: the playlist part of the Watch later page's `ytInitialData`
+- `history.json`: the day sections of the History page's `ytInitialData`
+- `history-continuation.json`: YouTube's API response for the next part of History
 
 Each keeps only a few items of each kind: regular videos, a collaboration, a
 playlist, a shelf and the token for the next page (Watch later has one only
-with more than 100 videos).
+with more than 100 videos). History keeps a few entries from a few days, among
+them one described the older way (`videoRenderer`) and a Shorts shelf, if the
+history has them.
 
 ## Capturing new ones
 

@@ -11,6 +11,8 @@ const FILES = {
   subscriptions: 'subscriptions.json',
   channelVideos: 'channel-videos.json',
   watchLater: 'watch-later.json',
+  history: 'history.json',
+  historyContinuation: 'history-continuation.json',
 };
 
 const only = process.argv.slice(2);

@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import channelVideos from './__fixtures__/channel-videos.json';
+import history from './__fixtures__/history.json';
+import historyContinuation from './__fixtures__/history-continuation.json';
 import home from './__fixtures__/home.json';
 import homeContinuation from './__fixtures__/home-continuation.json';
 import subscriptions from './__fixtures__/subscriptions.json';
 import watchLater from './__fixtures__/watch-later.json';
 import {
   parseChannelVideos,
+  parseHistoryContinuation,
+  parseHistoryPage,
   parseHomeContinuation,
   parseHomePage,
   parseSubscriptionsPage,
@@ -223,6 +227,120 @@ describe('parseWatchLaterContinuation', () => {
     const { videos, continuation } = parseWatchLaterContinuation(response);
     expect(videos).toHaveLength(4);
     expect(continuation).toBe('next');
+  });
+});
+
+describe('parseHistoryPage', () => {
+  const { videos, continuation } = parseHistoryPage(page(history));
+
+  it('reads the videos newest first, with the day each was watched', () => {
+    expect(videos.map((v) => [v.id, v.watchedOn])).toEqual([
+      ['video000025', 'Today'],
+      ['video000026', 'Today'],
+      ['video000027', 'Today'],
+      ['video000028', 'Today'],
+      ['video000029', 'Yesterday'],
+      ['video000030', 'Yesterday'],
+      ['video000031', 'Yesterday'],
+      ['video000034', 'Sunday'],
+      ['video000035', 'Sunday'],
+      ['video000036', 'Sunday'],
+    ]);
+  });
+
+  it('skips Shorts', () => {
+    // video000032 and video000033 are in the fixture's Shorts shelf.
+    expect(videos.map((v) => v.id)).not.toContain('video000032');
+    expect(videos.map((v) => v.id)).not.toContain('video000033');
+  });
+
+  it('reads videos like Home, with what removing them needs', () => {
+    expect(videos[0]).toEqual({
+      id: 'video000025',
+      title: 'Text 228',
+      thumbnail: 'https://i.ytimg.com/vi/video000025/hqdefault.jpg',
+      duration: '59:33',
+      progress: 59,
+      channel: {
+        title: 'Text 230',
+        url: 'https://www.youtube.com/@channel16',
+        avatar: 'https://yt3.ggpht.com/image-54',
+      },
+      details: [{ text: '55K', label: '55 thousand views', hasPlayIcon: true }],
+      feedback: { removeFromHistory: { token: 'token-139' } },
+      watchedOn: 'Today',
+    });
+  });
+
+  it('reads the entries YouTube describes the older way like the others', () => {
+    expect(videos[1]).toEqual({
+      id: 'video000026',
+      title: 'Text 234',
+      thumbnail: 'https://i.ytimg.com/vi/video000026/hqdefault.jpg',
+      duration: '0:58',
+      progress: 100,
+      channel: {
+        title: 'Text 230',
+        url: 'https://www.youtube.com/@channel16',
+        avatar: 'https://yt3.ggpht.com/image-54',
+      },
+      details: [{ text: '5.6K', label: '5.6 thousand views', hasPlayIcon: true }],
+      feedback: { removeFromHistory: { token: 'token-144' } },
+      watchedOn: 'Today',
+    });
+  });
+
+  it('keeps a video watched on several days only on the latest', () => {
+    const sections = (history as any).contents.sectionListRenderer.contents;
+    const today = sections[0].itemSectionRenderer;
+    const repeated = structuredClone(today.contents[0]);
+    const data = {
+      contents: {
+        sectionListRenderer: {
+          contents: [
+            today,
+            { itemSectionRenderer: { ...today, header: undefined, contents: [repeated] } },
+          ],
+        },
+      },
+    };
+    const ids = parseHistoryPage(page(data)).videos.map((v) => v.id);
+    expect(ids.filter((id) => id === 'video000025')).toHaveLength(1);
+  });
+
+  it('reads the token for the next part', () => {
+    expect(continuation).toBe('token-173');
+  });
+
+  it('fails on pages without YouTube data', () => {
+    expect(() => parseHistoryPage('<html></html>')).toThrow(/not found/);
+  });
+});
+
+describe('parseHistoryContinuation', () => {
+  const { videos, continuation } = parseHistoryContinuation(historyContinuation);
+
+  it('reads the videos and days like the first part, skipping Shorts', () => {
+    expect(videos.map((v) => [v.id, v.watchedOn])).toEqual([
+      ['video000037', 'Saturday'],
+      ['video000038', 'Saturday'],
+      ['video000039', 'Saturday'],
+      ['video000040', 'Saturday'],
+      ['video000043', 'Thursday'],
+      ['video000044', 'Thursday'],
+      ['video000045', 'Thursday'],
+    ]);
+    for (const video of videos) {
+      expect(video.feedback.removeFromHistory?.token).toMatch(/^token-/);
+    }
+  });
+
+  it('reads the token for the part after', () => {
+    expect(continuation).toBe('token-203');
+  });
+
+  it('returns nothing for an unrelated response', () => {
+    expect(parseHistoryContinuation({})).toEqual({ videos: [], continuation: undefined });
   });
 });
 
