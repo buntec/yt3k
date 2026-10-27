@@ -68,9 +68,14 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const openPlayer = useCallback<OpenPlayer>(async (video, { onClose } = {}) => {
-    setIsMinimized(false);
     // The video is already playing, minimized: bring it back without restarting it.
-    if (currentRef.current?.video.id === video.id) return;
+    if (currentRef.current?.video.id === video.id) {
+      setIsMinimized(false);
+      return;
+    }
+    // Another video replaces the one playing at the same size, so a minimized
+    // player stays out of the way.
+    if (!currentRef.current) setIsMinimized(false);
     await refererRule;
     // No autoplay: YouTube leaves videos that start without a click in the
     // player out of the watch history, also when started via the JS API.
