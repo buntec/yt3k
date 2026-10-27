@@ -72,8 +72,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     // The video is already playing, minimized: bring it back without restarting it.
     if (currentRef.current?.video.id === video.id) return;
     await refererRule;
+    // No autoplay: YouTube leaves videos that start without a click in the
+    // player out of the watch history, also when started via the JS API.
     const params = new URLSearchParams({
-      autoplay: '1',
       rel: '0',
       // Lets the player report errors to this page via postMessage.
       enablejsapi: '1',
