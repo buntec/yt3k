@@ -30,7 +30,7 @@ const subscriptionsItem = storage.defineItem<Channel[]>('local:subscriptions', {
 });
 const feedsItem = storage.defineItem<Feeds>('local:feeds', {
   fallback: {},
-  version: 4,
+  version: 5,
   migrations: {
     // Version 2 adds view counts: load all feeds again rather than show
     // videos without them until each feed gets old enough to be refreshed.
@@ -40,6 +40,8 @@ const feedsItem = storage.defineItem<Feeds>('local:feeds', {
     3: () => ({}),
     // Version 4 adds durations, loaded again like the view counts.
     4: () => ({}),
+    // Version 5 adds how much of each video was watched.
+    5: () => ({}),
   },
 });
 

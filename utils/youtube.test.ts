@@ -292,6 +292,21 @@ describe('parseChannelVideos', () => {
     ]);
   });
 
+  it('reads how much of a video was watched', () => {
+    const data = structuredClone(channelVideos) as any;
+    const overlay =
+      data.contents.richGridRenderer.contents[0].richItemRenderer.content.lockupViewModel
+        .contentImage.thumbnailViewModel.overlays[0].thumbnailBottomOverlayViewModel;
+    // As YouTube sends it for videos the user started watching
+    overlay.progressBar = { thumbnailOverlayProgressBarViewModel: { startPercent: 42 } };
+    expect(parseChannelVideos(data, now).map((v) => v.progress)).toEqual([
+      42,
+      undefined,
+      undefined,
+      undefined,
+    ]);
+  });
+
   /**
    * The fixture with the first video's view count and age replaced by
    * `parts`: texts, or [text, label] pairs.

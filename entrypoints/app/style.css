@@ -101,7 +101,8 @@
   background: #f00;
 }
 
-.card-thumbnail:has(.progress) .duration {
+.card-thumbnail:has(.progress) .duration,
+.thumbnail:has(.progress) .duration {
   bottom: 10px;
 }
 

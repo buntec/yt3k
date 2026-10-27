@@ -272,6 +272,12 @@ function VideoLink({ video }: { video: Video }) {
               <img src={`https://i.ytimg.com/vi/${video.id}/mqdefault.jpg`} alt="" loading="lazy" />
             </AspectRatio>
             {video.duration && <span className="duration">{video.duration}</span>}
+            {video.progress ? (
+              <span
+                className="progress"
+                style={{ '--progress': `${video.progress}%` } as React.CSSProperties}
+              />
+            ) : null}
           </div>
           <VStack gap={1}>
             <span className="video-title">

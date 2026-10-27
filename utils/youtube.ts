@@ -19,6 +19,8 @@ export interface Video {
   views?: number;
   /** Badge on the thumbnail, e.g. "21:52" */
   duration?: string;
+  /** How much of the video the user has watched, in percent */
+  progress?: number;
 }
 
 /** A video in a list on YouTube (Home, Watch later), as YouTube describes it there. */
@@ -162,6 +164,8 @@ export function parseChannelVideos(data: unknown, now: number): Video[] {
         published: new Date(now - age).toISOString(),
         views: texts.map(parseViews).find((views) => views !== undefined),
         duration: findAll(lockup.contentImage, 'thumbnailBadgeViewModel')[0]?.text,
+        progress: findAll(lockup.contentImage, 'thumbnailOverlayProgressBarViewModel')[0]
+          ?.startPercent,
       };
     })
     .filter((video) => video !== undefined);
