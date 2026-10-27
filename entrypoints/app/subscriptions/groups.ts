@@ -124,6 +124,76 @@ export function setInGroup(groupId: string, channelId: string, isIn: boolean) {
   );
 }
 
+/** Puts back the groups as they were, e.g. on Undo of an import. */
+export function setGroups(groups: Group[]) {
+  save(groups);
+}
+
+/** What a groups file holds: no IDs, which only mean something here */
+interface GroupsFile {
+  format: typeof FILE_FORMAT;
+  groups: Omit<Group, 'id'>[];
+}
+
+const FILE_FORMAT = 'yt3k-groups-1';
+
+/** The groups as JSON, to save to a file */
+export function exportGroups(groups: Group[]): string {
+  const file: GroupsFile = {
+    format: FILE_FORMAT,
+    groups: groups.map(({ name, color, channelIds }) => ({ name, color, channelIds })),
+  };
+  return JSON.stringify(file, null, 2);
+}
+
+/** The groups in a file saved by exportGroups. Throws if it isn't one. */
+export function parseGroupsFile(text: string): Omit<Group, 'id'>[] {
+  const file = JSON.parse(text) as Partial<GroupsFile> | null;
+  if (file?.format !== FILE_FORMAT || !Array.isArray(file.groups)) {
+    throw new Error('Not a groups file');
+  }
+  return file.groups.map((g) => {
+    if (
+      typeof g?.name !== 'string' ||
+      !g.name.trim() ||
+      !Array.isArray(g.channelIds) ||
+      !g.channelIds.every((id) => typeof id === 'string')
+    ) {
+      throw new Error('Not a groups file');
+    }
+    return {
+      name: g.name.trim(),
+      // An unknown color, e.g. from a later version, shouldn't lose the group
+      color: GROUP_COLORS.includes(g.color) ? g.color : 'blue',
+      channelIds: [...new Set(g.channelIds)],
+    };
+  });
+}
+
+/**
+ * The groups with the imported ones added. One with the name of an existing
+ * group adds its channels to it and gives it its color, so importing a file
+ * again changes nothing and no group is ever lost.
+ */
+export function mergeGroups(groups: Group[], imported: Omit<Group, 'id'>[]): Group[] {
+  const merged = [...groups];
+  for (const group of imported) {
+    const i = merged.findIndex((g) => g.name.toLowerCase() === group.name.toLowerCase());
+    if (i === -1) {
+      merged.push({ ...group, id: crypto.randomUUID() });
+    } else {
+      const channelIds = [...new Set([...merged[i]!.channelIds, ...group.channelIds])];
+      merged[i] = { ...merged[i]!, color: group.color, channelIds };
+    }
+  }
+  return merged;
+}
+
+/** Adds the groups in a file saved by exportGroups. Throws if it isn't one. */
+export function importGroups(text: string) {
+  save(mergeGroups(state.groups, parseGroupsFile(text)));
+}
+
 // The filter is a display setting like the number of videos per channel: in
 // localStorage, so the page has it on first render. Unlike the settings, it's
 // read once rather than following other tabs, which can show other groups.

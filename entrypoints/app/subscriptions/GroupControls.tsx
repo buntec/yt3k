@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { Download, Pencil, Plus, Trash2, Upload } from 'lucide-react';
 import { Badge } from '@astryxdesign/core/Badge';
 import { Button } from '@astryxdesign/core/Button';
 import { Dialog, DialogHeader } from '@astryxdesign/core/Dialog';
@@ -29,9 +29,12 @@ import {
   createGroup,
   deleteGroup,
   editGroup,
+  exportGroups,
+  importGroups,
   nameProblem,
   restoreGroup,
   setGroupFilter,
+  setGroups,
   setInGroup,
   unusedColor,
   useGroups,
@@ -77,6 +80,53 @@ export function GroupsNav({ channels, filter }: { channels: Channel[]; filter: G
     });
   };
 
+  const download = () => {
+    const url = URL.createObjectURL(
+      new Blob([exportGroups(groups)], { type: 'application/json' }),
+    );
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `yt3k-groups-${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    // Firefox may not have started the download when click returns
+    setTimeout(() => URL.revokeObjectURL(url));
+  };
+
+  const upload = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,application/json';
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      const before = groups;
+      try {
+        importGroups(await file.text());
+      } catch (err) {
+        console.warn(err);
+        showToast({ type: 'error', body: `${file.name} isn't a groups file` });
+        return;
+      }
+      const hide = showToast({
+        body: `Imported groups from ${file.name}`,
+        uniqueID: 'group-import',
+        autoHideDuration: 10_000,
+        endContent: (
+          <Button
+            label="Undo"
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              hide();
+              setGroups(before);
+            }}
+          />
+        ),
+      });
+    };
+    input.click();
+  };
+
   return (
     <>
       <SideNav>
@@ -97,14 +147,35 @@ export function GroupsNav({ channels, filter }: { channels: Channel[]; filter: G
         <SideNavSection
           title="Groups"
           endContent={
-            <IconButton
-              label="New group"
-              tooltip="New group"
-              icon={<Icon icon={Plus} />}
-              variant="ghost"
-              size="sm"
-              onClick={() => setEditing(null)}
-            />
+            <HStack gap={1} vAlign="center">
+              <MoreMenu
+                label="Group options"
+                size="sm"
+                alignment="end"
+                items={[
+                  {
+                    label: 'Export groups',
+                    icon: Download,
+                    isDisabled: groups.length === 0,
+                    onClick: download,
+                  },
+                  {
+                    label: 'Import groups…',
+                    icon: Upload,
+                    description: 'Adds to the groups here',
+                    onClick: upload,
+                  },
+                ]}
+              />
+              <IconButton
+                label="New group"
+                tooltip="New group"
+                icon={<Icon icon={Plus} />}
+                variant="ghost"
+                size="sm"
+                onClick={() => setEditing(null)}
+              />
+            </HStack>
           }
         >
           {groups.map((group) => (
