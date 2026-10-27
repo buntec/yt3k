@@ -103,7 +103,3 @@ the add-on for self-distribution (unlisted; it isn't published on the add-ons si
 ## License
 
 [MIT](LICENSE)
-
-The icon is the 📺 emoji from [Twemoji](https://github.com/jdecked/twemoji),
-© Twitter, Inc. and other contributors, licensed under
-[CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/).
