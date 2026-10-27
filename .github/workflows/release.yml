@@ -1,0 +1,67 @@
+name: Release
+
+# Pushing a tag like v1.2.3 builds the extension for each browser and publishes
+# the builds as a GitHub release.
+on:
+  push:
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      # Optional: with these API credentials from addons.mozilla.org, the
+      # release also gets a signed Firefox add-on that installs permanently.
+      AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
+      AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run compile
+      - run: npm test
+
+      # The tag sets the version, so package.json doesn't need a bump per release.
+      - name: Set the version from the tag
+        run: |
+          echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+          npm pkg set version="${GITHUB_REF_NAME#v}"
+
+      # Chrome's build also works in Brave, Opera, Vivaldi and other Chromium browsers.
+      - run: npm run zip
+      - run: npm run zip -- -b edge
+      - run: npm run zip:firefox
+      - name: Lint the Firefox build
+        run: npx web-ext lint --source-dir .output/firefox-mv3
+
+      - name: Sign the Firefox add-on
+        if: env.AMO_JWT_ISSUER != ''
+        run: |
+          npx web-ext sign \
+            --source-dir .output/firefox-mv3 \
+            --channel unlisted \
+            --api-key "$AMO_JWT_ISSUER" \
+            --api-secret "$AMO_JWT_SECRET" \
+            --upload-source-code ".output/yt3k-$VERSION-sources.zip" \
+            --artifacts-dir .output/signed
+          mv .output/signed/*.xpi ".output/yt3k-$VERSION-firefox.xpi"
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          files=(.output/yt3k-"$VERSION"-{chrome,edge,firefox}.zip)
+          xpi=".output/yt3k-$VERSION-firefox.xpi"
+          if [[ -f $xpi ]]; then files+=("$xpi"); fi
+          gh release create "$GITHUB_REF_NAME" \
+            --verify-tag \
+            --title "yt3k $VERSION" \
+            --notes "See the README for how to install these builds." \
+            --generate-notes \
+            "${files[@]}"

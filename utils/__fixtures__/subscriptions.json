@@ -1,0 +1,1606 @@
+{
+ "contents": {
+  "twoColumnBrowseResultsRenderer": {
+   "tabs": [
+    {
+     "tabRenderer": {
+      "selected": true,
+      "content": {
+       "sectionListRenderer": {
+        "contents": [
+         {
+          "itemSectionRenderer": {
+           "contents": [
+            {
+             "shelfRenderer": {
+              "content": {
+               "expandedShelfContentsRenderer": {
+                "items": [
+                 {
+                  "channelRenderer": {
+                   "channelId": "UCchannel000000000000016",
+                   "title": {
+                    "simpleText": "Text 165"
+                   },
+                   "navigationEndpoint": {
+                    "commandMetadata": {},
+                    "browseEndpoint": {
+                     "browseId": "UCchannel000000000000016",
+                     "canonicalBaseUrl": "/@channel10"
+                    }
+                   },
+                   "thumbnail": {
+                    "thumbnails": [
+                     {
+                      "url": "//yt3.ggpht.com/image-39",
+                      "width": 88,
+                      "height": 88
+                     },
+                     {
+                      "url": "//yt3.ggpht.com/image-40",
+                      "width": 176,
+                      "height": 176
+                     }
+                    ]
+                   },
+                   "descriptionSnippet": {
+                    "runs": [
+                     {
+                      "text": "Text 166"
+                     }
+                    ]
+                   },
+                   "shortBylineText": {
+                    "runs": [
+                     {
+                      "text": "Text 165",
+                      "navigationEndpoint": {
+                       "commandMetadata": {},
+                       "browseEndpoint": {
+                        "browseId": "UCchannel000000000000016",
+                        "canonicalBaseUrl": "/@channel10"
+                       }
+                      }
+                     }
+                    ]
+                   },
+                   "videoCountText": {
+                    "accessibility": {
+                     "accessibilityData": {
+                      "label": "Text 167"
+                     }
+                    },
+                    "simpleText": "Text 168"
+                   },
+                   "subscriptionButton": {
+                    "subscribed": true
+                   },
+                   "ownerBadges": [
+                    {
+                     "metadataBadgeRenderer": {
+                      "icon": {
+                       "iconType": "CHECK_CIRCLE_THICK"
+                      },
+                      "style": "BADGE_STYLE_TYPE_VERIFIED",
+                      "tooltip": "Text 10",
+                      "accessibilityData": {
+                       "label": "Text 10"
+                      }
+                     }
+                    }
+                   ],
+                   "subscriberCountText": {
+                    "simpleText": "Text 169"
+                   },
+                   "subscribeButton": {
+                    "subscribeButtonRenderer": {
+                     "buttonText": {
+                      "runs": [
+                       {
+                        "text": "Text 170"
+                       }
+                      ]
+                     },
+                     "subscribed": true,
+                     "enabled": true,
+                     "type": "FREE",
+                     "channelId": "UCchannel000000000000016",
+                     "showPreferences": false,
+                     "subscribedButtonText": {
+                      "runs": [
+                       {
+                        "text": "Text 170"
+                       }
+                      ]
+                     },
+                     "unsubscribedButtonText": {
+                      "runs": [
+                       {
+                        "text": "Text 171"
+                       }
+                      ]
+                     },
+                     "unsubscribeButtonText": {
+                      "runs": [
+                       {
+                        "text": "Text 172"
+                       }
+                      ]
+                     },
+                     "subscribeAccessibility": {
+                      "accessibilityData": {
+                       "label": "Text 173"
+                      }
+                     },
+                     "unsubscribeAccessibility": {
+                      "accessibilityData": {
+                       "label": "Text 174"
+                      }
+                     },
+                     "notificationPreferenceButton": {
+                      "subscriptionNotificationToggleButtonRenderer": {
+                       "states": [
+                        {
+                         "stateId": 2,
+                         "nextStateId": 2,
+                         "state": {
+                          "buttonRenderer": {
+                           "style": "STYLE_TEXT",
+                           "size": "SIZE_DEFAULT",
+                           "isDisabled": false,
+                           "icon": {
+                            "iconType": "NOTIFICATIONS_ACTIVE"
+                           },
+                           "accessibility": {
+                            "label": "Text 175"
+                           },
+                           "accessibilityData": {
+                            "accessibilityData": {
+                             "label": "Text 175"
+                            }
+                           }
+                          }
+                         }
+                        },
+                        {
+                         "stateId": 3,
+                         "nextStateId": 3,
+                         "state": {
+                          "buttonRenderer": {
+                           "style": "STYLE_TEXT",
+                           "size": "SIZE_DEFAULT",
+                           "isDisabled": false,
+                           "icon": {
+                            "iconType": "NOTIFICATIONS_NONE"
+                           },
+                           "accessibility": {
+                            "label": "Text 176"
+                           },
+                           "accessibilityData": {
+                            "accessibilityData": {
+                             "label": "Text 176"
+                            }
+                           }
+                          }
+                         }
+                        },
+                        {
+                         "stateId": 0,
+                         "nextStateId": 0,
+                         "state": {
+                          "buttonRenderer": {
+                           "style": "STYLE_TEXT",
+                           "size": "SIZE_DEFAULT",
+                           "isDisabled": false,
+                           "icon": {
+                            "iconType": "NOTIFICATIONS_OFF"
+                           },
+                           "accessibility": {
+                            "label": "Text 177"
+                           },
+                           "accessibilityData": {
+                            "accessibilityData": {
+                             "label": "Text 177"
+                            }
+                           }
+                          }
+                         }
+                        }
+                       ],
+                       "currentStateId": 3,
+                       "command": {
+                        "commandExecutorCommand": {
+                         "commands": [
+                          {
+                           "openPopupAction": {
+                            "popup": {
+                             "menuPopupRenderer": {
+                              "items": [
+                               {
+                                "menuServiceItemRenderer": {
+                                 "text": {
+                                  "simpleText": "Text 178"
+                                 },
+                                 "icon": {
+                                  "iconType": "NOTIFICATIONS_ACTIVE"
+                                 },
+                                 "serviceEndpoint": {
+                                  "commandMetadata": {},
+                                  "modifyChannelNotificationPreferenceEndpoint": {
+                                   "params": "token-114"
+                                  }
+                                 },
+                                 "isSelected": false
+                                }
+                               },
+                               {
+                                "menuServiceItemRenderer": {
+                                 "text": {
+                                  "simpleText": "Text 179"
+                                 },
+                                 "icon": {
+                                  "iconType": "NOTIFICATIONS_NONE"
+                                 },
+                                 "serviceEndpoint": {
+                                  "commandMetadata": {},
+                                  "modifyChannelNotificationPreferenceEndpoint": {
+                                   "params": "token-115"
+                                  }
+                                 },
+                                 "isSelected": true
+                                }
+                               },
+                               {
+                                "menuServiceItemRenderer": {
+                                 "text": {
+                                  "simpleText": "Text 180"
+                                 },
+                                 "icon": {
+                                  "iconType": "NOTIFICATIONS_OFF"
+                                 },
+                                 "serviceEndpoint": {
+                                  "commandMetadata": {},
+                                  "modifyChannelNotificationPreferenceEndpoint": {
+                                   "params": "token-116"
+                                  }
+                                 },
+                                 "isSelected": false
+                                }
+                               },
+                               {
+                                "menuServiceItemRenderer": {
+                                 "text": {
+                                  "runs": [
+                                   {
+                                    "text": "Text 172"
+                                   }
+                                  ]
+                                 },
+                                 "icon": {
+                                  "iconType": "PERSON_MINUS"
+                                 },
+                                 "serviceEndpoint": {
+                                  "commandMetadata": {},
+                                  "signalServiceEndpoint": {
+                                   "signal": "CLIENT_SIGNAL",
+                                   "actions": [
+                                    {
+                                     "openPopupAction": {
+                                      "popup": {
+                                       "confirmDialogRenderer": {
+                                        "dialogMessages": [
+                                         {
+                                          "runs": [
+                                           {
+                                            "text": "Text 181"
+                                           },
+                                           {
+                                            "text": "Text 165"
+                                           },
+                                           {
+                                            "text": "Text 182"
+                                           }
+                                          ]
+                                         }
+                                        ],
+                                        "confirmButton": {
+                                         "buttonRenderer": {
+                                          "style": "STYLE_BLUE_TEXT",
+                                          "size": "SIZE_DEFAULT",
+                                          "isDisabled": false,
+                                          "text": {
+                                           "runs": [
+                                            {
+                                             "text": "Text 172"
+                                            }
+                                           ]
+                                          },
+                                          "serviceEndpoint": {
+                                           "commandMetadata": {},
+                                           "unsubscribeEndpoint": {
+                                            "channelIds": [
+                                             "UCchannel000000000000016"
+                                            ],
+                                            "params": "Text 183"
+                                           }
+                                          },
+                                          "accessibility": {
+                                           "label": "Text 172"
+                                          }
+                                         }
+                                        },
+                                        "cancelButton": {
+                                         "buttonRenderer": {
+                                          "style": "STYLE_TEXT",
+                                          "size": "SIZE_DEFAULT",
+                                          "isDisabled": false,
+                                          "text": {
+                                           "runs": [
+                                            {
+                                             "text": "Text 184"
+                                            }
+                                           ]
+                                          },
+                                          "accessibility": {
+                                           "label": "Text 184"
+                                          }
+                                         }
+                                        },
+                                        "primaryIsCancel": false
+                                       }
+                                      },
+                                      "popupType": "DIALOG"
+                                     }
+                                    }
+                                   ]
+                                  }
+                                 }
+                                }
+                               }
+                              ]
+                             }
+                            },
+                            "popupType": "DROPDOWN"
+                           }
+                          }
+                         ]
+                        }
+                       },
+                       "targetId": "Text 185",
+                       "secondaryIcon": {
+                        "iconType": "EXPAND_MORE"
+                       }
+                      }
+                     },
+                     "subscribedEntityKey": "token-117",
+                     "onSubscribeEndpoints": [
+                      {
+                       "commandMetadata": {},
+                       "subscribeEndpoint": {
+                        "channelIds": [
+                         "UCchannel000000000000016"
+                        ],
+                        "params": "Text 186"
+                       }
+                      }
+                     ],
+                     "onUnsubscribeEndpoints": [
+                      {
+                       "commandMetadata": {},
+                       "signalServiceEndpoint": {
+                        "signal": "CLIENT_SIGNAL",
+                        "actions": [
+                         {
+                          "openPopupAction": {
+                           "popup": {
+                            "confirmDialogRenderer": {
+                             "dialogMessages": [
+                              {
+                               "runs": [
+                                {
+                                 "text": "Text 181"
+                                },
+                                {
+                                 "text": "Text 165"
+                                },
+                                {
+                                 "text": "Text 182"
+                                }
+                               ]
+                              }
+                             ],
+                             "confirmButton": {
+                              "buttonRenderer": {
+                               "style": "STYLE_BLUE_TEXT",
+                               "size": "SIZE_DEFAULT",
+                               "isDisabled": false,
+                               "text": {
+                                "runs": [
+                                 {
+                                  "text": "Text 172"
+                                 }
+                                ]
+                               },
+                               "serviceEndpoint": {
+                                "commandMetadata": {},
+                                "unsubscribeEndpoint": {
+                                 "channelIds": [
+                                  "UCchannel000000000000016"
+                                 ],
+                                 "params": "Text 187"
+                                }
+                               },
+                               "accessibility": {
+                                "label": "Text 172"
+                               }
+                              }
+                             },
+                             "cancelButton": {
+                              "buttonRenderer": {
+                               "style": "STYLE_TEXT",
+                               "size": "SIZE_DEFAULT",
+                               "isDisabled": false,
+                               "text": {
+                                "runs": [
+                                 {
+                                  "text": "Text 184"
+                                 }
+                                ]
+                               },
+                               "accessibility": {
+                                "label": "Text 184"
+                               }
+                              }
+                             },
+                             "primaryIsCancel": false
+                            }
+                           },
+                           "popupType": "DIALOG"
+                          }
+                         }
+                        ]
+                       }
+                      }
+                     ]
+                    }
+                   },
+                   "longBylineText": {
+                    "runs": [
+                     {
+                      "text": "Text 165",
+                      "navigationEndpoint": {
+                       "commandMetadata": {},
+                       "browseEndpoint": {
+                        "browseId": "UCchannel000000000000016",
+                        "canonicalBaseUrl": "/@channel10"
+                       }
+                      }
+                     }
+                    ]
+                   },
+                   "channelRendererStyle": "CHANNEL_RENDERER_STYLE__NARROW_THUMBNAIL_SPACING"
+                  }
+                 },
+                 {
+                  "channelRenderer": {
+                   "channelId": "UCchannel000000000000017",
+                   "title": {
+                    "simpleText": "Text 188"
+                   },
+                   "navigationEndpoint": {
+                    "commandMetadata": {},
+                    "browseEndpoint": {
+                     "browseId": "UCchannel000000000000017",
+                     "canonicalBaseUrl": "/@channel11"
+                    }
+                   },
+                   "thumbnail": {
+                    "thumbnails": [
+                     {
+                      "url": "//yt3.ggpht.com/image-41",
+                      "width": 88,
+                      "height": 88
+                     },
+                     {
+                      "url": "//yt3.ggpht.com/image-42",
+                      "width": 176,
+                      "height": 176
+                     }
+                    ]
+                   },
+                   "descriptionSnippet": {
+                    "runs": [
+                     {
+                      "text": "Text 189"
+                     }
+                    ]
+                   },
+                   "shortBylineText": {
+                    "runs": [
+                     {
+                      "text": "Text 188",
+                      "navigationEndpoint": {
+                       "commandMetadata": {},
+                       "browseEndpoint": {
+                        "browseId": "UCchannel000000000000017",
+                        "canonicalBaseUrl": "/@channel11"
+                       }
+                      }
+                     }
+                    ]
+                   },
+                   "videoCountText": {
+                    "accessibility": {
+                     "accessibilityData": {
+                      "label": "Text 190"
+                     }
+                    },
+                    "simpleText": "Text 191"
+                   },
+                   "subscriptionButton": {
+                    "subscribed": true
+                   },
+                   "subscriberCountText": {
+                    "simpleText": "Text 192"
+                   },
+                   "subscribeButton": {
+                    "subscribeButtonRenderer": {
+                     "buttonText": {
+                      "runs": [
+                       {
+                        "text": "Text 170"
+                       }
+                      ]
+                     },
+                     "subscribed": true,
+                     "enabled": true,
+                     "type": "FREE",
+                     "channelId": "UCchannel000000000000017",
+                     "showPreferences": false,
+                     "subscribedButtonText": {
+                      "runs": [
+                       {
+                        "text": "Text 170"
+                       }
+                      ]
+                     },
+                     "unsubscribedButtonText": {
+                      "runs": [
+                       {
+                        "text": "Text 171"
+                       }
+                      ]
+                     },
+                     "unsubscribeButtonText": {
+                      "runs": [
+                       {
+                        "text": "Text 172"
+                       }
+                      ]
+                     },
+                     "subscribeAccessibility": {
+                      "accessibilityData": {
+                       "label": "Text 193"
+                      }
+                     },
+                     "unsubscribeAccessibility": {
+                      "accessibilityData": {
+                       "label": "Text 194"
+                      }
+                     },
+                     "notificationPreferenceButton": {
+                      "subscriptionNotificationToggleButtonRenderer": {
+                       "states": [
+                        {
+                         "stateId": 2,
+                         "nextStateId": 2,
+                         "state": {
+                          "buttonRenderer": {
+                           "style": "STYLE_TEXT",
+                           "size": "SIZE_DEFAULT",
+                           "isDisabled": false,
+                           "icon": {
+                            "iconType": "NOTIFICATIONS_ACTIVE"
+                           },
+                           "accessibility": {
+                            "label": "Text 195"
+                           },
+                           "accessibilityData": {
+                            "accessibilityData": {
+                             "label": "Text 195"
+                            }
+                           }
+                          }
+                         }
+                        },
+                        {
+                         "stateId": 3,
+                         "nextStateId": 3,
+                         "state": {
+                          "buttonRenderer": {
+                           "style": "STYLE_TEXT",
+                           "size": "SIZE_DEFAULT",
+                           "isDisabled": false,
+                           "icon": {
+                            "iconType": "NOTIFICATIONS_NONE"
+                           },
+                           "accessibility": {
+                            "label": "Text 196"
+                           },
+                           "accessibilityData": {
+                            "accessibilityData": {
+                             "label": "Text 196"
+                            }
+                           }
+                          }
+                         }
+                        },
+                        {
+                         "stateId": 0,
+                         "nextStateId": 0,
+                         "state": {
+                          "buttonRenderer": {
+                           "style": "STYLE_TEXT",
+                           "size": "SIZE_DEFAULT",
+                           "isDisabled": false,
+                           "icon": {
+                            "iconType": "NOTIFICATIONS_OFF"
+                           },
+                           "accessibility": {
+                            "label": "Text 197"
+                           },
+                           "accessibilityData": {
+                            "accessibilityData": {
+                             "label": "Text 197"
+                            }
+                           }
+                          }
+                         }
+                        }
+                       ],
+                       "currentStateId": 3,
+                       "command": {
+                        "commandExecutorCommand": {
+                         "commands": [
+                          {
+                           "openPopupAction": {
+                            "popup": {
+                             "menuPopupRenderer": {
+                              "items": [
+                               {
+                                "menuServiceItemRenderer": {
+                                 "text": {
+                                  "simpleText": "Text 178"
+                                 },
+                                 "icon": {
+                                  "iconType": "NOTIFICATIONS_ACTIVE"
+                                 },
+                                 "serviceEndpoint": {
+                                  "commandMetadata": {},
+                                  "modifyChannelNotificationPreferenceEndpoint": {
+                                   "params": "token-118"
+                                  }
+                                 },
+                                 "isSelected": false
+                                }
+                               },
+                               {
+                                "menuServiceItemRenderer": {
+                                 "text": {
+                                  "simpleText": "Text 179"
+                                 },
+                                 "icon": {
+                                  "iconType": "NOTIFICATIONS_NONE"
+                                 },
+                                 "serviceEndpoint": {
+                                  "commandMetadata": {},
+                                  "modifyChannelNotificationPreferenceEndpoint": {
+                                   "params": "token-119"
+                                  }
+                                 },
+                                 "isSelected": true
+                                }
+                               },
+                               {
+                                "menuServiceItemRenderer": {
+                                 "text": {
+                                  "simpleText": "Text 180"
+                                 },
+                                 "icon": {
+                                  "iconType": "NOTIFICATIONS_OFF"
+                                 },
+                                 "serviceEndpoint": {
+                                  "commandMetadata": {},
+                                  "modifyChannelNotificationPreferenceEndpoint": {
+                                   "params": "token-120"
+                                  }
+                                 },
+                                 "isSelected": false
+                                }
+                               },
+                               {
+                                "menuServiceItemRenderer": {
+                                 "text": {
+                                  "runs": [
+                                   {
+                                    "text": "Text 172"
+                                   }
+                                  ]
+                                 },
+                                 "icon": {
+                                  "iconType": "PERSON_MINUS"
+                                 },
+                                 "serviceEndpoint": {
+                                  "commandMetadata": {},
+                                  "signalServiceEndpoint": {
+                                   "signal": "CLIENT_SIGNAL",
+                                   "actions": [
+                                    {
+                                     "openPopupAction": {
+                                      "popup": {
+                                       "confirmDialogRenderer": {
+                                        "dialogMessages": [
+                                         {
+                                          "runs": [
+                                           {
+                                            "text": "Text 181"
+                                           },
+                                           {
+                                            "text": "Text 188"
+                                           },
+                                           {
+                                            "text": "Text 182"
+                                           }
+                                          ]
+                                         }
+                                        ],
+                                        "confirmButton": {
+                                         "buttonRenderer": {
+                                          "style": "STYLE_BLUE_TEXT",
+                                          "size": "SIZE_DEFAULT",
+                                          "isDisabled": false,
+                                          "text": {
+                                           "runs": [
+                                            {
+                                             "text": "Text 172"
+                                            }
+                                           ]
+                                          },
+                                          "serviceEndpoint": {
+                                           "commandMetadata": {},
+                                           "unsubscribeEndpoint": {
+                                            "channelIds": [
+                                             "UCchannel000000000000017"
+                                            ],
+                                            "params": "Text 183"
+                                           }
+                                          },
+                                          "accessibility": {
+                                           "label": "Text 172"
+                                          }
+                                         }
+                                        },
+                                        "cancelButton": {
+                                         "buttonRenderer": {
+                                          "style": "STYLE_TEXT",
+                                          "size": "SIZE_DEFAULT",
+                                          "isDisabled": false,
+                                          "text": {
+                                           "runs": [
+                                            {
+                                             "text": "Text 184"
+                                            }
+                                           ]
+                                          },
+                                          "accessibility": {
+                                           "label": "Text 184"
+                                          }
+                                         }
+                                        },
+                                        "primaryIsCancel": false
+                                       }
+                                      },
+                                      "popupType": "DIALOG"
+                                     }
+                                    }
+                                   ]
+                                  }
+                                 }
+                                }
+                               }
+                              ]
+                             }
+                            },
+                            "popupType": "DROPDOWN"
+                           }
+                          }
+                         ]
+                        }
+                       },
+                       "targetId": "Text 185",
+                       "secondaryIcon": {
+                        "iconType": "EXPAND_MORE"
+                       }
+                      }
+                     },
+                     "subscribedEntityKey": "token-121",
+                     "onSubscribeEndpoints": [
+                      {
+                       "commandMetadata": {},
+                       "subscribeEndpoint": {
+                        "channelIds": [
+                         "UCchannel000000000000017"
+                        ],
+                        "params": "Text 186"
+                       }
+                      }
+                     ],
+                     "onUnsubscribeEndpoints": [
+                      {
+                       "commandMetadata": {},
+                       "signalServiceEndpoint": {
+                        "signal": "CLIENT_SIGNAL",
+                        "actions": [
+                         {
+                          "openPopupAction": {
+                           "popup": {
+                            "confirmDialogRenderer": {
+                             "dialogMessages": [
+                              {
+                               "runs": [
+                                {
+                                 "text": "Text 181"
+                                },
+                                {
+                                 "text": "Text 188"
+                                },
+                                {
+                                 "text": "Text 182"
+                                }
+                               ]
+                              }
+                             ],
+                             "confirmButton": {
+                              "buttonRenderer": {
+                               "style": "STYLE_BLUE_TEXT",
+                               "size": "SIZE_DEFAULT",
+                               "isDisabled": false,
+                               "text": {
+                                "runs": [
+                                 {
+                                  "text": "Text 172"
+                                 }
+                                ]
+                               },
+                               "serviceEndpoint": {
+                                "commandMetadata": {},
+                                "unsubscribeEndpoint": {
+                                 "channelIds": [
+                                  "UCchannel000000000000017"
+                                 ],
+                                 "params": "Text 187"
+                                }
+                               },
+                               "accessibility": {
+                                "label": "Text 172"
+                               }
+                              }
+                             },
+                             "cancelButton": {
+                              "buttonRenderer": {
+                               "style": "STYLE_TEXT",
+                               "size": "SIZE_DEFAULT",
+                               "isDisabled": false,
+                               "text": {
+                                "runs": [
+                                 {
+                                  "text": "Text 184"
+                                 }
+                                ]
+                               },
+                               "accessibility": {
+                                "label": "Text 184"
+                               }
+                              }
+                             },
+                             "primaryIsCancel": false
+                            }
+                           },
+                           "popupType": "DIALOG"
+                          }
+                         }
+                        ]
+                       }
+                      }
+                     ]
+                    }
+                   },
+                   "longBylineText": {
+                    "runs": [
+                     {
+                      "text": "Text 188",
+                      "navigationEndpoint": {
+                       "commandMetadata": {},
+                       "browseEndpoint": {
+                        "browseId": "UCchannel000000000000017",
+                        "canonicalBaseUrl": "/@channel11"
+                       }
+                      }
+                     }
+                    ]
+                   },
+                   "channelRendererStyle": "CHANNEL_RENDERER_STYLE__NARROW_THUMBNAIL_SPACING"
+                  }
+                 },
+                 {
+                  "channelRenderer": {
+                   "channelId": "UCchannel000000000000018",
+                   "title": {
+                    "simpleText": "Text 198"
+                   },
+                   "navigationEndpoint": {
+                    "commandMetadata": {},
+                    "browseEndpoint": {
+                     "browseId": "UCchannel000000000000018",
+                     "canonicalBaseUrl": "/@channel12"
+                    }
+                   },
+                   "thumbnail": {
+                    "thumbnails": [
+                     {
+                      "url": "//yt3.ggpht.com/image-43",
+                      "width": 88,
+                      "height": 88
+                     },
+                     {
+                      "url": "//yt3.ggpht.com/image-44",
+                      "width": 176,
+                      "height": 176
+                     }
+                    ]
+                   },
+                   "descriptionSnippet": {
+                    "runs": [
+                     {
+                      "text": "Text 199"
+                     }
+                    ]
+                   },
+                   "shortBylineText": {
+                    "runs": [
+                     {
+                      "text": "Text 198",
+                      "navigationEndpoint": {
+                       "commandMetadata": {},
+                       "browseEndpoint": {
+                        "browseId": "UCchannel000000000000018",
+                        "canonicalBaseUrl": "/@channel12"
+                       }
+                      }
+                     }
+                    ]
+                   },
+                   "videoCountText": {
+                    "accessibility": {
+                     "accessibilityData": {
+                      "label": "Text 200"
+                     }
+                    },
+                    "simpleText": "Text 201"
+                   },
+                   "subscriptionButton": {
+                    "subscribed": true
+                   },
+                   "ownerBadges": [
+                    {
+                     "metadataBadgeRenderer": {
+                      "icon": {
+                       "iconType": "CHECK_CIRCLE_THICK"
+                      },
+                      "style": "BADGE_STYLE_TYPE_VERIFIED",
+                      "tooltip": "Text 10",
+                      "accessibilityData": {
+                       "label": "Text 10"
+                      }
+                     }
+                    }
+                   ],
+                   "subscriberCountText": {
+                    "simpleText": "Text 202"
+                   },
+                   "subscribeButton": {
+                    "subscribeButtonRenderer": {
+                     "buttonText": {
+                      "runs": [
+                       {
+                        "text": "Text 170"
+                       }
+                      ]
+                     },
+                     "subscribed": true,
+                     "enabled": true,
+                     "type": "FREE",
+                     "channelId": "UCchannel000000000000018",
+                     "showPreferences": false,
+                     "subscribedButtonText": {
+                      "runs": [
+                       {
+                        "text": "Text 170"
+                       }
+                      ]
+                     },
+                     "unsubscribedButtonText": {
+                      "runs": [
+                       {
+                        "text": "Text 171"
+                       }
+                      ]
+                     },
+                     "unsubscribeButtonText": {
+                      "runs": [
+                       {
+                        "text": "Text 172"
+                       }
+                      ]
+                     },
+                     "subscribeAccessibility": {
+                      "accessibilityData": {
+                       "label": "Text 203"
+                      }
+                     },
+                     "unsubscribeAccessibility": {
+                      "accessibilityData": {
+                       "label": "Text 204"
+                      }
+                     },
+                     "notificationPreferenceButton": {
+                      "subscriptionNotificationToggleButtonRenderer": {
+                       "states": [
+                        {
+                         "stateId": 2,
+                         "nextStateId": 2,
+                         "state": {
+                          "buttonRenderer": {
+                           "style": "STYLE_TEXT",
+                           "size": "SIZE_DEFAULT",
+                           "isDisabled": false,
+                           "icon": {
+                            "iconType": "NOTIFICATIONS_ACTIVE"
+                           },
+                           "accessibility": {
+                            "label": "Text 205"
+                           },
+                           "accessibilityData": {
+                            "accessibilityData": {
+                             "label": "Text 205"
+                            }
+                           }
+                          }
+                         }
+                        },
+                        {
+                         "stateId": 3,
+                         "nextStateId": 3,
+                         "state": {
+                          "buttonRenderer": {
+                           "style": "STYLE_TEXT",
+                           "size": "SIZE_DEFAULT",
+                           "isDisabled": false,
+                           "icon": {
+                            "iconType": "NOTIFICATIONS_NONE"
+                           },
+                           "accessibility": {
+                            "label": "Text 206"
+                           },
+                           "accessibilityData": {
+                            "accessibilityData": {
+                             "label": "Text 206"
+                            }
+                           }
+                          }
+                         }
+                        },
+                        {
+                         "stateId": 0,
+                         "nextStateId": 0,
+                         "state": {
+                          "buttonRenderer": {
+                           "style": "STYLE_TEXT",
+                           "size": "SIZE_DEFAULT",
+                           "isDisabled": false,
+                           "icon": {
+                            "iconType": "NOTIFICATIONS_OFF"
+                           },
+                           "accessibility": {
+                            "label": "Text 207"
+                           },
+                           "accessibilityData": {
+                            "accessibilityData": {
+                             "label": "Text 207"
+                            }
+                           }
+                          }
+                         }
+                        }
+                       ],
+                       "currentStateId": 3,
+                       "command": {
+                        "commandExecutorCommand": {
+                         "commands": [
+                          {
+                           "openPopupAction": {
+                            "popup": {
+                             "menuPopupRenderer": {
+                              "items": [
+                               {
+                                "menuServiceItemRenderer": {
+                                 "text": {
+                                  "simpleText": "Text 178"
+                                 },
+                                 "icon": {
+                                  "iconType": "NOTIFICATIONS_ACTIVE"
+                                 },
+                                 "serviceEndpoint": {
+                                  "commandMetadata": {},
+                                  "modifyChannelNotificationPreferenceEndpoint": {
+                                   "params": "token-122"
+                                  }
+                                 },
+                                 "isSelected": false
+                                }
+                               },
+                               {
+                                "menuServiceItemRenderer": {
+                                 "text": {
+                                  "simpleText": "Text 179"
+                                 },
+                                 "icon": {
+                                  "iconType": "NOTIFICATIONS_NONE"
+                                 },
+                                 "serviceEndpoint": {
+                                  "commandMetadata": {},
+                                  "modifyChannelNotificationPreferenceEndpoint": {
+                                   "params": "token-123"
+                                  }
+                                 },
+                                 "isSelected": true
+                                }
+                               },
+                               {
+                                "menuServiceItemRenderer": {
+                                 "text": {
+                                  "simpleText": "Text 180"
+                                 },
+                                 "icon": {
+                                  "iconType": "NOTIFICATIONS_OFF"
+                                 },
+                                 "serviceEndpoint": {
+                                  "commandMetadata": {},
+                                  "modifyChannelNotificationPreferenceEndpoint": {
+                                   "params": "token-124"
+                                  }
+                                 },
+                                 "isSelected": false
+                                }
+                               },
+                               {
+                                "menuServiceItemRenderer": {
+                                 "text": {
+                                  "runs": [
+                                   {
+                                    "text": "Text 172"
+                                   }
+                                  ]
+                                 },
+                                 "icon": {
+                                  "iconType": "PERSON_MINUS"
+                                 },
+                                 "serviceEndpoint": {
+                                  "commandMetadata": {},
+                                  "signalServiceEndpoint": {
+                                   "signal": "CLIENT_SIGNAL",
+                                   "actions": [
+                                    {
+                                     "openPopupAction": {
+                                      "popup": {
+                                       "confirmDialogRenderer": {
+                                        "dialogMessages": [
+                                         {
+                                          "runs": [
+                                           {
+                                            "text": "Text 181"
+                                           },
+                                           {
+                                            "text": "Text 198"
+                                           },
+                                           {
+                                            "text": "Text 182"
+                                           }
+                                          ]
+                                         }
+                                        ],
+                                        "confirmButton": {
+                                         "buttonRenderer": {
+                                          "style": "STYLE_BLUE_TEXT",
+                                          "size": "SIZE_DEFAULT",
+                                          "isDisabled": false,
+                                          "text": {
+                                           "runs": [
+                                            {
+                                             "text": "Text 172"
+                                            }
+                                           ]
+                                          },
+                                          "serviceEndpoint": {
+                                           "commandMetadata": {},
+                                           "unsubscribeEndpoint": {
+                                            "channelIds": [
+                                             "UCchannel000000000000018"
+                                            ],
+                                            "params": "Text 183"
+                                           }
+                                          },
+                                          "accessibility": {
+                                           "label": "Text 172"
+                                          }
+                                         }
+                                        },
+                                        "cancelButton": {
+                                         "buttonRenderer": {
+                                          "style": "STYLE_TEXT",
+                                          "size": "SIZE_DEFAULT",
+                                          "isDisabled": false,
+                                          "text": {
+                                           "runs": [
+                                            {
+                                             "text": "Text 184"
+                                            }
+                                           ]
+                                          },
+                                          "accessibility": {
+                                           "label": "Text 184"
+                                          }
+                                         }
+                                        },
+                                        "primaryIsCancel": false
+                                       }
+                                      },
+                                      "popupType": "DIALOG"
+                                     }
+                                    }
+                                   ]
+                                  }
+                                 }
+                                }
+                               }
+                              ]
+                             }
+                            },
+                            "popupType": "DROPDOWN"
+                           }
+                          }
+                         ]
+                        }
+                       },
+                       "targetId": "Text 185",
+                       "secondaryIcon": {
+                        "iconType": "EXPAND_MORE"
+                       }
+                      }
+                     },
+                     "subscribedEntityKey": "token-125",
+                     "onSubscribeEndpoints": [
+                      {
+                       "commandMetadata": {},
+                       "subscribeEndpoint": {
+                        "channelIds": [
+                         "UCchannel000000000000018"
+                        ],
+                        "params": "Text 186"
+                       }
+                      }
+                     ],
+                     "onUnsubscribeEndpoints": [
+                      {
+                       "commandMetadata": {},
+                       "signalServiceEndpoint": {
+                        "signal": "CLIENT_SIGNAL",
+                        "actions": [
+                         {
+                          "openPopupAction": {
+                           "popup": {
+                            "confirmDialogRenderer": {
+                             "dialogMessages": [
+                              {
+                               "runs": [
+                                {
+                                 "text": "Text 181"
+                                },
+                                {
+                                 "text": "Text 198"
+                                },
+                                {
+                                 "text": "Text 182"
+                                }
+                               ]
+                              }
+                             ],
+                             "confirmButton": {
+                              "buttonRenderer": {
+                               "style": "STYLE_BLUE_TEXT",
+                               "size": "SIZE_DEFAULT",
+                               "isDisabled": false,
+                               "text": {
+                                "runs": [
+                                 {
+                                  "text": "Text 172"
+                                 }
+                                ]
+                               },
+                               "serviceEndpoint": {
+                                "commandMetadata": {},
+                                "unsubscribeEndpoint": {
+                                 "channelIds": [
+                                  "UCchannel000000000000018"
+                                 ],
+                                 "params": "Text 187"
+                                }
+                               },
+                               "accessibility": {
+                                "label": "Text 172"
+                               }
+                              }
+                             },
+                             "cancelButton": {
+                              "buttonRenderer": {
+                               "style": "STYLE_TEXT",
+                               "size": "SIZE_DEFAULT",
+                               "isDisabled": false,
+                               "text": {
+                                "runs": [
+                                 {
+                                  "text": "Text 184"
+                                 }
+                                ]
+                               },
+                               "accessibility": {
+                                "label": "Text 184"
+                               }
+                              }
+                             },
+                             "primaryIsCancel": false
+                            }
+                           },
+                           "popupType": "DIALOG"
+                          }
+                         }
+                        ]
+                       }
+                      }
+                     ]
+                    }
+                   },
+                   "longBylineText": {
+                    "runs": [
+                     {
+                      "text": "Text 198",
+                      "navigationEndpoint": {
+                       "commandMetadata": {},
+                       "browseEndpoint": {
+                        "browseId": "UCchannel000000000000018",
+                        "canonicalBaseUrl": "/@channel12"
+                       }
+                      }
+                     }
+                    ]
+                   },
+                   "channelRendererStyle": "CHANNEL_RENDERER_STYLE__NARROW_THUMBNAIL_SPACING"
+                  }
+                 }
+                ]
+               }
+              }
+             }
+            }
+           ]
+          }
+         }
+        ],
+        "header": {
+         "chipBarViewModel": {
+          "chips": [
+           {
+            "chipViewModel": {
+             "text": "Text 208",
+             "displayType": "CHIP_VIEW_MODEL_DISPLAY_TYPE_DROP_DOWN",
+             "tapCommand": {
+              "innertubeCommand": {
+               "showSheetCommand": {
+                "panelLoadingStrategy": {
+                 "inlineContent": {
+                  "sheetViewModel": {
+                   "content": {
+                    "listViewModel": {
+                     "listItems": [
+                      {
+                       "listItemViewModel": {
+                        "title": {
+                         "content": "Text 209"
+                        },
+                        "entityKey": "Text 210",
+                        "rendererContext": {
+                         "commandContext": {
+                          "onTap": {
+                           "innertubeCommand": {
+                            "commandExecutorCommand": {
+                             "commands": [
+                              {
+                               "entityUpdateCommand": {
+                                "entityBatchUpdate": {
+                                 "mutations": [
+                                  {
+                                   "entityKey": "token-126",
+                                   "type": "ENTITY_MUTATION_TYPE_REPLACE",
+                                   "payload": {
+                                    "chipEntity": {
+                                     "key": "token-126",
+                                     "text": "Text 209"
+                                    }
+                                   }
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "commandMetadata": {},
+                               "continuationCommand": {
+                                "token": "token-127",
+                                "request": "CONTINUATION_REQUEST_TYPE_BROWSE",
+                                "command": {
+                                 "showReloadUiCommand": {
+                                  "targetId": "Text 211"
+                                 }
+                                }
+                               }
+                              }
+                             ]
+                            }
+                           }
+                          }
+                         }
+                        }
+                       }
+                      },
+                      {
+                       "listItemViewModel": {
+                        "title": {
+                         "content": "Text 208"
+                        },
+                        "isSelected": true,
+                        "entityKey": "Text 212",
+                        "rendererContext": {
+                         "commandContext": {
+                          "onTap": {
+                           "innertubeCommand": {
+                            "commandExecutorCommand": {
+                             "commands": [
+                              {
+                               "entityUpdateCommand": {
+                                "entityBatchUpdate": {
+                                 "mutations": [
+                                  {
+                                   "entityKey": "token-126",
+                                   "type": "ENTITY_MUTATION_TYPE_REPLACE",
+                                   "payload": {
+                                    "chipEntity": {
+                                     "key": "token-126",
+                                     "text": "Text 208"
+                                    }
+                                   }
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "commandMetadata": {},
+                               "continuationCommand": {
+                                "token": "token-128",
+                                "request": "CONTINUATION_REQUEST_TYPE_BROWSE",
+                                "command": {
+                                 "showReloadUiCommand": {
+                                  "targetId": "Text 211"
+                                 }
+                                }
+                               }
+                              }
+                             ]
+                            }
+                           }
+                          }
+                         }
+                        }
+                       }
+                      },
+                      {
+                       "listItemViewModel": {
+                        "title": {
+                         "content": "Text 213"
+                        },
+                        "entityKey": "Text 214",
+                        "rendererContext": {
+                         "commandContext": {
+                          "onTap": {
+                           "innertubeCommand": {
+                            "commandExecutorCommand": {
+                             "commands": [
+                              {
+                               "entityUpdateCommand": {
+                                "entityBatchUpdate": {
+                                 "mutations": [
+                                  {
+                                   "entityKey": "token-126",
+                                   "type": "ENTITY_MUTATION_TYPE_REPLACE",
+                                   "payload": {
+                                    "chipEntity": {
+                                     "key": "token-126",
+                                     "text": "Text 213"
+                                    }
+                                   }
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "commandMetadata": {},
+                               "continuationCommand": {
+                                "token": "token-129",
+                                "request": "CONTINUATION_REQUEST_TYPE_BROWSE",
+                                "command": {
+                                 "showReloadUiCommand": {
+                                  "targetId": "Text 211"
+                                 }
+                                }
+                               }
+                              }
+                             ]
+                            }
+                           }
+                          }
+                         }
+                        }
+                       }
+                      }
+                     ]
+                    }
+                   }
+                  }
+                 }
+                }
+               }
+              }
+             },
+             "accessibilityLabel": "Text 208",
+             "chipEntityKey": "token-126"
+            }
+           }
+          ]
+         }
+        },
+        "targetId": "Text 211"
+       }
+      },
+      "tabIdentifier": "Text 215",
+      "accessibility": {
+       "accessibilityData": {
+        "label": "Text 216"
+       }
+      }
+     }
+    }
+   ]
+  }
+ }
+}
