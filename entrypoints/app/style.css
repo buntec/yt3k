@@ -1,5 +1,11 @@
-/* What Astryx components don't cover: links wrapping rich content, sized
-   thumbnails and the embedded player. Colors come from the theme's tokens. */
+/* What Astryx components don't cover: the logo, links wrapping rich content,
+   sized thumbnails and the embedded player. Colors come from the theme's tokens. */
+
+.logo {
+  display: block;
+  width: var(--spacing-8);
+  height: var(--spacing-8);
+}
 
 .status {
   color: var(--color-text-secondary);

@@ -1,1 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path fill="#31373D" d="M35 31s0 4-4 4H5c-4 0-4-4-4-4V12c0-4 4-4 4-4h26s4 0 4 4v19z"/><path fill="#31373D" d="M21.303 10.389c.391.391.391 1.023 0 1.414s-1.023.391-1.414 0l-9.192-9.192c-.391-.391-.391-1.023 0-1.414s1.023-.391 1.414 0l9.192 9.192z"/><path fill="#31373D" d="M14.697 10.389c-.391.391-.391 1.023 0 1.414s1.023.391 1.414 0l9.192-9.192c.391-.391.391-1.023 0-1.414s-1.023-.391-1.414 0l-9.192 9.192z"/><path fill="#55ACEE" d="M18 11c8 0 10 1 11 2s2 3 2 8-1 7-2 8-3 2-11 2-10-1-11-2-2-3-2-8 1-7 2-8 3-2 11-2z"/><circle fill="#66757F" cx="31.5" cy="31.5" r="1.5"/><circle fill="#66757F" cx="4.5" cy="31.5" r="1.5"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M10 3l6 6 6-6" stroke="#f03" stroke-width="2.5"/>
+    <rect x="1" y="9" width="30" height="21" rx="6" fill="#f03"/>
+    <g stroke="#fff" stroke-width="2">
+      <path d="M5.13 16.05A2.15 2.35 0 1 1 7.15 19.2a2.15 2.65 0 1 1-2.02 3.56"/>
+      <rect x="10.9" y="14.5" width="4.3" height="10" rx="2.15"/>
+      <rect x="16.8" y="14.5" width="4.3" height="10" rx="2.15"/>
+      <rect x="22.7" y="14.5" width="4.3" height="10" rx="2.15"/>
+    </g>
+  </g>
+</svg>

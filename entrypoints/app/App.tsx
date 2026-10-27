@@ -41,8 +41,8 @@ export function App() {
               label="Pages"
               heading={
                 <TopNavHeading
-                  logo={<span aria-hidden="true">📺</span>}
-                  heading="yt3k"
+                  logo={<img className="logo" src="/favicon.svg" alt="" />}
+                  logoLabel="yt3k"
                   headingHref={routeHref('subscriptions')}
                 />
               }
