@@ -40,6 +40,11 @@
   color: var(--color-text-primary);
 }
 
+/* VStack's display: flex would otherwise show the closed, empty dialog. */
+.player:not([open]) {
+  display: none;
+}
+
 .player::backdrop {
   background: var(--color-overlay);
   backdrop-filter: blur(2px);
