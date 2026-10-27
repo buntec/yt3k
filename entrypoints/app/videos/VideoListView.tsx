@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef } from 'react';
+import { memo, useDeferredValue, useEffect, useRef, useState } from 'react';
 import { EllipsisVertical, type LucideIcon, Play } from 'lucide-react';
 import { AspectRatio } from '@astryxdesign/core/AspectRatio';
 import { Avatar } from '@astryxdesign/core/Avatar';
@@ -12,10 +12,12 @@ import { Layout, LayoutContent, LayoutHeader } from '@astryxdesign/core/Layout';
 import { Selector } from '@astryxdesign/core/Selector';
 import { HStack, StackItem, VStack } from '@astryxdesign/core/Stack';
 import { Heading, Text } from '@astryxdesign/core/Text';
+import { TextInput } from '@astryxdesign/core/TextInput';
 import { useToast } from '@astryxdesign/core/Toast';
 import { VisuallyHidden } from '@astryxdesign/core/VisuallyHidden';
 import type { ListedVideo, MetadataPart } from '@/utils/youtube';
 import { PlayableLink } from '../player';
+import { useSearchShortcut } from '../search';
 import { COLUMN_CHOICES, type Columns, setColumns, useColumns } from './columns';
 import type { Removal, VideoList, VideoListState } from './list';
 
@@ -48,6 +50,13 @@ export function VideoListView({
   const { videos, continuation, loading, error, removalError, removals } = list.use();
   const columns = useColumns();
   const status = loading === 'refresh' ? loadingText : (error ?? removalError);
+  const [query, setQuery] = useState('');
+  const deferredQuery = useDeferredValue(query.trim().toLowerCase());
+  const searchRef = useRef<HTMLInputElement>(null);
+  useSearchShortcut(searchRef);
+  const matching = deferredQuery
+    ? videos.filter((video) => matchesQuery(video, deferredQuery))
+    : videos;
 
   // Removing a channel hides its other videos as well.
   const hiddenChannels = new Set(
@@ -59,8 +68,19 @@ export function VideoListView({
       contentWidth={1600}
       header={
         <LayoutHeader hasDivider padding={6}>
-          <HStack gap={4} vAlign="center">
+          <HStack gap={4} vAlign="center" wrap="wrap">
             <Heading level={1}>{title}</Heading>
+            <TextInput
+              ref={searchRef}
+              label="Search videos and channels"
+              isLabelHidden
+              placeholder="Search videos and channels"
+              value={query}
+              onChange={setQuery}
+              hasClear
+              autoComplete="off"
+              width={280}
+            />
             <StackItem size="fill">
               <span className={error || removalError ? 'status error' : 'status'} role="status">
                 <Text type="supporting" color="inherit">
@@ -93,7 +113,17 @@ export function VideoListView({
             )
           ) : (
             <VStack gap={8}>
-              {groupByDay(videos).map((group, i) => (
+              {deferredQuery && matching.length === 0 && (
+                <EmptyState
+                  title="No matching videos"
+                  description={
+                    continuation ? 'Only the videos loaded so far were searched.' : undefined
+                  }
+                  headingLevel={2}
+                  isCompact
+                />
+              )}
+              {groupByDay(matching).map((group, i) => (
                 <VStack key={i} as="section" gap={4}>
                   {group.day && <Heading level={2}>{group.day}</Heading>}
                   {/* The chosen number of columns, unless the window is too
@@ -119,13 +149,29 @@ export function VideoListView({
                 </VStack>
               ))}
               {continuation && (
-                <ShowMore list={list} loading={loading} hasFailed={error !== undefined} />
+                <ShowMore
+                  list={list}
+                  loading={loading}
+                  // A search that matches little would otherwise keep loading
+                  // page after page, through years of history.
+                  isAutomatic={!deferredQuery && error === undefined}
+                />
               )}
             </VStack>
           )}
         </LayoutContent>
       }
     />
+  );
+}
+
+/**
+ * Whether the video's title or channel contains the query. Only searches the
+ * videos loaded so far: YouTube's lists can go back years.
+ */
+function matchesQuery(video: ListedVideo, query: string) {
+  return [video.title, video.channel?.title ?? ''].some((text) =>
+    text.toLowerCase().includes(query),
   );
 }
 
@@ -145,25 +191,26 @@ function groupByDay(videos: ListedVideo[]) {
 }
 
 /**
- * Loads the next page once the user scrolls near the end of the list. The
- * button stays as a fallback, and after a failure it is the only way to
- * retry, so a broken request isn't repeated on every scroll.
+ * Loads the next page once the user scrolls near the end of the list, if
+ * `isAutomatic`. The button stays as a fallback, and otherwise, such as after
+ * a failure, it is the only way to load more, so a broken request isn't
+ * repeated on every scroll.
  */
 function ShowMore({
   list,
   loading,
-  hasFailed,
+  isAutomatic,
 }: {
   list: VideoList;
   loading: VideoListState['loading'];
-  hasFailed: boolean;
+  isAutomatic: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
 
   // Observing anew after each load also catches the case where the new page
   // didn't fill the screen and the end of the list is still in view.
   useEffect(() => {
-    if (loading !== 'idle' || hasFailed || !ref.current) return;
+    if (loading !== 'idle' || !isAutomatic || !ref.current) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry?.isIntersecting) void list.loadMore();
@@ -173,7 +220,7 @@ function ShowMore({
     );
     observer.observe(ref.current);
     return () => observer.disconnect();
-  }, [list, loading, hasFailed]);
+  }, [list, loading, isAutomatic]);
 
   return (
     <div ref={ref}>

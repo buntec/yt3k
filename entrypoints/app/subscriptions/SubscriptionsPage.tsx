@@ -23,6 +23,7 @@ import { useToast } from '@astryxdesign/core/Toast';
 import { VisuallyHidden } from '@astryxdesign/core/VisuallyHidden';
 import type { Channel, Video } from '@/utils/youtube';
 import { PlayableLink } from '../player';
+import { useSearchShortcut } from '../search';
 import { saveToWatchLater } from '../watch-later/store';
 import {
   type Feed,
@@ -37,17 +38,7 @@ export function SubscriptionsPage() {
   const [query, setQuery] = useState('');
   const deferredQuery = useDeferredValue(query.trim().toLowerCase());
   const searchRef = useRef<HTMLInputElement>(null);
-
-  // "/" focuses the search bar, like on YouTube.
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== '/' || event.target instanceof HTMLInputElement) return;
-      event.preventDefault();
-      searchRef.current?.focus();
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, []);
+  useSearchShortcut(searchRef);
 
   // Coming back to the browser tab updates the feeds that got old meanwhile.
   useEffect(() => {
