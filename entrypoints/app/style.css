@@ -29,6 +29,31 @@
   background: var(--color-background-surface);
 }
 
+.player {
+  width: min(1200px, 100vw - 48px, (100dvh - 120px) * 16 / 9);
+  max-width: none;
+  max-height: none;
+  border: none;
+  border-radius: var(--radius-container);
+  background: var(--color-background-surface);
+  box-shadow: var(--shadow-high);
+  color: var(--color-text-primary);
+}
+
+.player::backdrop {
+  background: var(--color-overlay);
+  backdrop-filter: blur(2px);
+}
+
+/* Minimized: above the page, which stays usable, in the bottom right corner */
+.player:not(:modal) {
+  position: fixed;
+  inset: auto var(--spacing-4) var(--spacing-4) auto;
+  z-index: 2;
+  width: min(400px, 100vw - 2 * var(--spacing-4));
+  margin: 0;
+}
+
 .player-frame {
   display: block;
   width: 100%;

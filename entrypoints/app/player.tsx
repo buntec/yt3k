@@ -1,6 +1,10 @@
 import { createContext, use, useCallback, useEffect, useRef, useState } from 'react';
+import { Maximize2, PictureInPicture2 } from 'lucide-react';
 import { Button } from '@astryxdesign/core/Button';
-import { Dialog, DialogHeader } from '@astryxdesign/core/Dialog';
+import { DialogHeader } from '@astryxdesign/core/Dialog';
+import { useScrollLock } from '@astryxdesign/core/hooks';
+import { Icon } from '@astryxdesign/core/Icon';
+import { VStack } from '@astryxdesign/core/VStack';
 import { extensionHost } from '@/utils/extension';
 import type { Video } from '@/utils/youtube';
 
@@ -37,6 +41,8 @@ const refererRule = browser.declarativeNetRequest.updateSessionRules({
 
 type OpenPlayer = (video: PlayableVideo, options?: { onClose?: () => void }) => void;
 
+type Playing = { video: PlayableVideo; src: string; onClose?: () => void };
+
 const PlayerContext = createContext<OpenPlayer>(() => {
   throw new Error('usePlayer() needs a <PlayerProvider>');
 });
@@ -47,14 +53,24 @@ export function usePlayer(): OpenPlayer {
 }
 
 export function PlayerProvider({ children }: { children: React.ReactNode }) {
-  const [current, setCurrent] = useState<{
-    video: PlayableVideo;
-    src: string;
-    onClose?: () => void;
-  }>();
+  const [current, setCurrent] = useState<Playing>();
+  // Minimized, the player sits in the bottom right corner and leaves the page usable.
+  const [isMinimized, setIsMinimized] = useState(false);
+  // What is playing, for openPlayer() to read without changing on every video.
+  const currentRef = useRef<Playing>(undefined);
+  const dialogRef = useRef<HTMLDialogElement>(null);
   const frameRef = useRef<HTMLIFrameElement>(null);
 
+  const play = useCallback((next: Playing | undefined) => {
+    currentRef.current?.onClose?.();
+    currentRef.current = next;
+    setCurrent(next);
+  }, []);
+
   const openPlayer = useCallback<OpenPlayer>(async (video, { onClose } = {}) => {
+    setIsMinimized(false);
+    // The video is already playing, minimized: bring it back without restarting it.
+    if (currentRef.current?.video.id === video.id) return;
     await refererRule;
     const params = new URLSearchParams({
       autoplay: '1',
@@ -66,13 +82,38 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     // Embeds always start from the beginning, so pick up where the user left off.
     const start = resumePosition(video);
     if (start) params.set('start', String(start));
-    setCurrent({ video, src: `${EMBED_ORIGIN}/embed/${video.id}?${params}`, onClose });
-  }, []);
+    play({ video, src: `${EMBED_ORIGIN}/embed/${video.id}?${params}`, onClose });
+  }, [play]);
 
-  const closePlayer = () => {
-    setCurrent(undefined);
-    current?.onClose?.();
-  };
+  const closePlayer = () => play(undefined);
+
+  // One <dialog> for both sizes, shown modal or not: an iframe moved to another
+  // element reloads, and the video would start over.
+  useEffect(() => {
+    const dialog = dialogRef.current!;
+    if (!current) {
+      dialog.close();
+      return;
+    }
+    const isModal = !isMinimized;
+    if (dialog.open && dialog.matches(':modal') === isModal) return;
+    dialog.close();
+    if (isModal) dialog.showModal();
+    else dialog.show();
+  }, [current, isMinimized]);
+
+  // Escape makes the browser close the full-size player. Switching sizes
+  // closes it too, but it is open again by the time the event fires.
+  useEffect(() => {
+    const dialog = dialogRef.current!;
+    const onClose = () => {
+      if (!dialog.open) play(undefined);
+    };
+    dialog.addEventListener('close', onClose);
+    return () => dialog.removeEventListener('close', onClose);
+  }, [play]);
+
+  useScrollLock(current !== undefined && !isMinimized);
 
   useEffect(() => {
     if (!current) return;
@@ -109,24 +150,55 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   return (
     <PlayerContext value={openPlayer}>
       {children}
-      <Dialog
-        isOpen={current !== undefined}
-        onOpenChange={(isOpen) => !isOpen && closePlayer()}
-        // Keep the whole 16:9 video plus title bar inside the viewport.
-        width="min(1200px, 100vw - 48px, (100dvh - 120px) * 16 / 9)"
-        maxHeight="none"
+      <VStack
+        as="dialog"
+        ref={dialogRef}
+        className="player"
+        aria-label={current?.video.title}
+        padding={isMinimized ? 2 : 4}
+        gap={isMinimized ? 2 : 3}
+        // A click on the backdrop lands on the dialog, outside its box.
+        onClick={(event) => {
+          if (isMinimized || event.target !== event.currentTarget) return;
+          const box = event.currentTarget.getBoundingClientRect();
+          const { clientX: x, clientY: y } = event;
+          if (x < box.left || x > box.right || y < box.top || y > box.bottom) closePlayer();
+        }}
       >
         {current && (
           <>
             <DialogHeader
               title={current.video.title}
               endContent={
-                <Button
-                  label="Watch on YouTube"
-                  variant="ghost"
-                  size="sm"
-                  href={watchUrl(current.video)}
-                />
+                isMinimized ? (
+                  <Button
+                    label="Expand player"
+                    tooltip="Expand player"
+                    isIconOnly
+                    icon={<Icon icon={Maximize2} />}
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsMinimized(false)}
+                  />
+                ) : (
+                  <>
+                    <Button
+                      label="Watch on YouTube"
+                      variant="ghost"
+                      size="sm"
+                      href={watchUrl(current.video)}
+                    />
+                    <Button
+                      label="Minimize player"
+                      tooltip="Minimize player"
+                      isIconOnly
+                      icon={<Icon icon={PictureInPicture2} />}
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsMinimized(true)}
+                    />
+                  </>
+                )
               }
               onOpenChange={closePlayer}
             />
@@ -140,7 +212,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
             />
           </>
         )}
-      </Dialog>
+      </VStack>
     </PlayerContext>
   );
 }

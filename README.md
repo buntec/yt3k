@@ -23,7 +23,9 @@ In Feed and Watch later, scrolling to the bottom loads the next batch, and partl
 watched videos show how far you got, like on YouTube.
 
 Clicking a video plays it in an embedded player on the page; videos that can't be
-embedded open on YouTube in a new tab instead.
+embedded open on YouTube in a new tab instead. The player's minimize button shrinks
+it into the bottom right corner, where it keeps playing while you browse, also
+on the other tabs.
 
 yt3k talks to YouTube as the account you're logged in with in the same browser.
 The theme switch in the top bar picks System, Light or Dark.
