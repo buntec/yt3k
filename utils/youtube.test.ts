@@ -259,33 +259,33 @@ describe('parseChannelVideos', () => {
   const now = Date.parse('2026-10-27T12:00:00Z');
   const day = 24 * 60 * 60 * 1000;
 
-  it('reads the videos newest first, dated by their age, with their durations', () => {
+  it('reads the videos newest first, dated by the middle of their age, with their durations', () => {
     expect(parseChannelVideos(channelVideos, now)).toEqual([
       {
         id: 'video000001',
         title: 'Text 7',
-        published: new Date(now - 5 * day).toISOString(),
+        published: new Date(now - 5.5 * day).toISOString(),
         views: 412e6,
         duration: '98:27',
       },
       {
         id: 'video000002',
         title: 'Text 11',
-        published: new Date(now - 8 * 7 * day).toISOString(),
+        published: new Date(now - 8.5 * 7 * day).toISOString(),
         views: 809e6,
         duration: '17:55',
       },
       {
         id: 'video000003',
         title: 'Text 13',
-        published: new Date(now - 4 * 30 * day).toISOString(),
+        published: new Date(now - 4.5 * 30 * day).toISOString(),
         views: 449e6,
         duration: '45:08',
       },
       {
         id: 'video000004',
         title: 'Text 15',
-        published: new Date(now - 4 * 30 * day).toISOString(),
+        published: new Date(now - 4.5 * 30 * day).toISOString(),
         views: 488e6,
         duration: '68:33',
       },
@@ -330,11 +330,11 @@ describe('parseChannelVideos', () => {
 
   it('reads ages down to the second', () => {
     expect(withFirstVideoDetails('1 view', '53 minutes ago')[0]).toMatchObject({
-      published: new Date(now - 53 * 60 * 1000).toISOString(),
+      published: new Date(now - 53.5 * 60 * 1000).toISOString(),
       views: 1,
     });
     expect(withFirstVideoDetails('1 second ago')[0]?.published).toBe(
-      new Date(now - 1000).toISOString(),
+      new Date(now - 1500).toISOString(),
     );
   });
 
@@ -352,21 +352,21 @@ describe('parseChannelVideos', () => {
     expect(
       withFirstVideoDetails(['1.5M', '1.5 million views'], ['2w ago', '2 weeks ago'])[0],
     ).toMatchObject({
-      published: new Date(now - 14 * day).toISOString(),
+      published: new Date(now - 2.5 * 7 * day).toISOString(),
       views: 1.5e6,
     });
     // Without labels
     const short = (...texts: string[]) => withFirstVideoDetails(...texts)[0];
     expect(short('102K', '1h ago')).toMatchObject({
-      published: new Date(now - 60 * 60 * 1000).toISOString(),
+      published: new Date(now - 1.5 * 60 * 60 * 1000).toISOString(),
       views: 102e3,
     });
     expect(short('60', '3 min ago')).toMatchObject({
-      published: new Date(now - 3 * 60 * 1000).toISOString(),
+      published: new Date(now - 3.5 * 60 * 1000).toISOString(),
       views: 60,
     });
-    expect(short('5mo ago')?.published).toBe(new Date(now - 5 * 30 * day).toISOString());
-    expect(short('1y ago')?.published).toBe(new Date(now - 365 * day).toISOString());
+    expect(short('5mo ago')?.published).toBe(new Date(now - 5.5 * 30 * day).toISOString());
+    expect(short('1y ago')?.published).toBe(new Date(now - 1.5 * 365 * day).toISOString());
   });
 
   it('skips videos that are yet to come out', () => {

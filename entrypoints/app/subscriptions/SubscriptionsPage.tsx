@@ -19,7 +19,6 @@ import { HStack, StackItem, VStack } from '@astryxdesign/core/Stack';
 import { Icon } from '@astryxdesign/core/Icon';
 import { Heading, Text } from '@astryxdesign/core/Text';
 import { TextInput } from '@astryxdesign/core/TextInput';
-import { Timestamp } from '@astryxdesign/core/Timestamp';
 import { useToast } from '@astryxdesign/core/Toast';
 import { VisuallyHidden } from '@astryxdesign/core/VisuallyHidden';
 import type { Channel, Video } from '@/utils/youtube';
@@ -60,10 +59,9 @@ export function SubscriptionsPage() {
   }, []);
 
   const visible = useMemo(() => {
-    const latest = (c: Channel) =>
-      Date.parse(feeds[c.id]?.videos[0]?.published ?? '') || 0;
+    const keys = new Map(channels.map((c) => [c.id, recency(feeds[c.id])]));
     return [...channels]
-      .sort((a, b) => latest(b) - latest(a))
+      .sort((a, b) => compareRecency(keys.get(a.id)!, keys.get(b.id)!))
       .filter((c) => matchesQuery(c, feeds[c.id], deferredQuery));
   }, [channels, feeds, deferredQuery]);
 
@@ -168,6 +166,33 @@ function ShowMore({
   return <div ref={ref} />;
 }
 
+const SECOND = 1000;
+const MINUTE = 60 * SECOND;
+const HOUR = 60 * MINUTE;
+const DAY = 24 * HOUR;
+
+/**
+ * How recent the channel's latest video is, to sort channels by. YouTube only
+ * tells videos' age, in days, weeks… once they're a day old, so channels whose
+ * latest videos are as old by that measure go by those videos' views instead.
+ */
+function recency(feed: Feed | undefined): number[] {
+  const video = feed?.videos[0];
+  if (!video) return [2];
+  const published = Date.parse(video.published);
+  // Rounded since the feed was stamped a moment after its ages were counted.
+  const age = Math.round((feed.fetchedAt - published) / MINUTE) * MINUTE;
+  return age < DAY ? [0, -published] : [1, age, -(video.views ?? 0)];
+}
+
+function compareRecency(a: number[], b: number[]) {
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    const diff = (a[i] ?? 0) - (b[i] ?? 0);
+    if (diff) return diff;
+  }
+  return 0;
+}
+
 /** Whether the channel name or one of its listed video titles contains the query. */
 function matchesQuery(channel: Channel, feed: Feed | undefined, query: string) {
   if (!query) return true;
@@ -202,7 +227,7 @@ const ChannelSection = memo(function ChannelSection({
                 </Text>
               </span>
               {videos[0] && (
-                <Timestamp value={videos[0].published} format="relative" hasTooltip={false} />
+                <Age published={videos[0].published} />
               )}
             </HStack>
           </a>
@@ -267,6 +292,40 @@ const compactNumber = new Intl.NumberFormat(undefined, {
   maximumFractionDigits: 1,
 });
 
+/** The units YouTube tells ages in, each with the age up to which it's used */
+const AGE_STEPS: [unit: Intl.RelativeTimeFormatUnit, size: number, limit: number][] = [
+  ['second', SECOND, MINUTE],
+  ['minute', MINUTE, HOUR],
+  ['hour', HOUR, DAY],
+  ['day', DAY, 7 * DAY],
+  // Up to 5 weeks rather than a month, since "4 weeks ago" dates videos 4½
+  // weeks back.
+  ['week', 7 * DAY, 5 * 7 * DAY],
+  ['month', 30 * DAY, 365 * DAY],
+  ['year', 365 * DAY, Infinity],
+];
+
+const relativeTime = new Intl.RelativeTimeFormat(undefined, { numeric: 'always' });
+// For "yesterday", and "now" rather than "0 seconds ago"
+const relativeTimeInWords = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
+
+/**
+ * How long ago a video came out, in the units YouTube uses, e.g. "3 weeks
+ * ago": no more precise than the age YouTube told, where Timestamp would show
+ * some number of days.
+ */
+function Age({ published }: { published: string }) {
+  const age = Math.max(0, Date.now() - Date.parse(published));
+  const [unit, size] = AGE_STEPS.find(([, , limit]) => age < limit)!;
+  const count = Math.floor(age / size);
+  const format = unit === 'day' || unit === 'second' ? relativeTimeInWords : relativeTime;
+  return (
+    <Text type="supporting">
+      <time dateTime={published}>{format.format(-count, unit)}</time>
+    </Text>
+  );
+}
+
 function VideoLink({ video, channelId }: { video: Video; channelId: string }) {
   const showToast = useToast();
   return (
@@ -310,7 +369,7 @@ function VideoLink({ video, channelId }: { video: Video; channelId: string }) {
                   <Text type="supporting">·</Text>
                 </>
               )}
-              <Timestamp value={video.published} format="relative" hasTooltip={false} />
+              <Age published={video.published} />
             </HStack>
           </VStack>
         </HStack>

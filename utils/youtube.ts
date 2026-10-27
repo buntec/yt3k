@@ -140,7 +140,8 @@ export async function fetchLatestVideos(
 /**
  * The videos in YouTube's API response for a channel's Videos tab, in
  * English. YouTube only tells their age, e.g. "3 weeks ago", so `published`
- * is as precise as that, counted back from `now`.
+ * is as precise as that, counted back from `now`: the middle of the age's
+ * range, 3½ weeks ago for one that's between 3 and 4 weeks old.
  */
 export function parseChannelVideos(data: unknown, now: number): Video[] {
   const items = findAll(data, 'richGridRenderer')[0]?.contents;
@@ -191,14 +192,19 @@ const SHORT_AGE_UNITS: Record<string, keyof typeof AGE_UNITS> = {
   y: 'year',
 };
 
-/** Milliseconds in an age like "53 minutes ago", "2w ago" or "Streamed 1 year ago" */
+/**
+ * Milliseconds in an age like "53 minutes ago", "2w ago" or "Streamed 1 year
+ * ago", taken from the middle of the range it rounds down: 2½ weeks for "2w".
+ * A relative time shown for it then reads like YouTube's even with a clock a
+ * few minutes off from the one it was counted back from.
+ */
 function parseAge(text: string): number | undefined {
   const match =
     text.match(/\b(\d+) (second|minute|hour|day|week|month|year)s? ago$/) ??
     text.match(/\b(\d+) ?(s|min|h|d|w|mo|y) ago$/);
   if (!match) return undefined;
   const unit = SHORT_AGE_UNITS[match[2]!] ?? (match[2] as keyof typeof AGE_UNITS);
-  return Number(match[1]) * AGE_UNITS[unit];
+  return (Number(match[1]) + 0.5) * AGE_UNITS[unit];
 }
 
 const VIEW_SCALES: Record<string, number> = {
