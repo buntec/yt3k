@@ -7,6 +7,7 @@ import { Icon } from '@astryxdesign/core/Icon';
 import { VStack } from '@astryxdesign/core/VStack';
 import { extensionHost } from '@/utils/extension';
 import type { Video } from '@/utils/youtube';
+import { useAutoplay } from './autoplay';
 
 /** What the player needs to know about a video */
 export type PlayableVideo = Pick<Video, 'id' | 'title' | 'duration' | 'progress'>;
@@ -53,6 +54,7 @@ export function usePlayer(): OpenPlayer {
 }
 
 export function PlayerProvider({ children }: { children: React.ReactNode }) {
+  const autoplay = useAutoplay();
   const [current, setCurrent] = useState<Playing>();
   // Minimized, the player sits in the bottom right corner and leaves the page usable.
   const [isMinimized, setIsMinimized] = useState(false);
@@ -77,9 +79,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     // player stays out of the way.
     if (!currentRef.current) setIsMinimized(false);
     await refererRule;
-    // No autoplay: YouTube leaves videos that start without a click in the
-    // player out of the watch history, also when started via the JS API.
     const params = new URLSearchParams({
+      // Off unless chosen: YouTube leaves videos that start without a click in
+      // the player out of the watch history, also when started via the JS API.
+      autoplay: autoplay ? '1' : '0',
       rel: '0',
       // Lets the player report errors to this page via postMessage.
       enablejsapi: '1',
@@ -89,7 +92,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const start = resumePosition(video);
     if (start) params.set('start', String(start));
     play({ video, src: `${EMBED_ORIGIN}/embed/${video.id}?${params}`, onClose });
-  }, [play]);
+  }, [play, autoplay]);
 
   const closePlayer = () => play(undefined);
 

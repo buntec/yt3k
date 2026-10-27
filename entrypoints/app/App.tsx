@@ -1,9 +1,12 @@
 import { Activity, useEffect, useState } from 'react';
 import { AppShell } from '@astryxdesign/core/AppShell';
 import { SegmentedControl, SegmentedControlItem } from '@astryxdesign/core/SegmentedControl';
+import { HStack } from '@astryxdesign/core/Stack';
+import { Switch } from '@astryxdesign/core/Switch';
 import { Theme } from '@astryxdesign/core/theme';
 import { TopNav, TopNavHeading, TopNavItem } from '@astryxdesign/core/TopNav';
 import { defaultThemeSlug, themes } from '@/astryx-themes';
+import { setAutoplay, useAutoplay } from './autoplay';
 import { FeedPage } from './feed/FeedPage';
 import { HistoryPage } from './history/HistoryPage';
 import { PlayerProvider } from './player';
@@ -22,6 +25,7 @@ const PAGES: Record<Route, () => React.ReactNode> = {
 export function App() {
   const route = useRoute();
   const mode = useThemeMode();
+  const autoplay = useAutoplay();
   const Page = PAGES[route];
   // Subs stays mounted, hidden, once shown: rendering its hundreds of videos
   // again takes long enough to notice on every return from another page.
@@ -55,16 +59,26 @@ export function App() {
                 />
               ))}
               endContent={
-                <SegmentedControl
-                  label="Theme"
-                  size="sm"
-                  value={mode}
-                  onChange={(value) => setThemeMode(value as ThemeMode)}
-                >
-                  <SegmentedControlItem value="system" label="System" />
-                  <SegmentedControlItem value="light" label="Light" />
-                  <SegmentedControlItem value="dark" label="Dark" />
-                </SegmentedControl>
+                <HStack gap={4} vAlign="center">
+                  <Switch
+                    label="Autoplay"
+                    labelTooltip="Videos that start on their own aren't added to your YouTube watch history"
+                    labelPosition="start"
+                    size="sm"
+                    value={autoplay}
+                    onChange={setAutoplay}
+                  />
+                  <SegmentedControl
+                    label="Theme"
+                    size="sm"
+                    value={mode}
+                    onChange={(value) => setThemeMode(value as ThemeMode)}
+                  >
+                    <SegmentedControlItem value="system" label="System" />
+                    <SegmentedControlItem value="light" label="Light" />
+                    <SegmentedControlItem value="dark" label="Dark" />
+                  </SegmentedControl>
+                </HStack>
               }
             />
           }
