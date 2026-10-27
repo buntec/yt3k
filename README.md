@@ -1,9 +1,14 @@
 # yt3k
 
-Browser extension that improves the YouTube UX. Built with [WXT](https://wxt.dev),
-React and the [Astryx](https://astryx.atmeta.com) design system.
+A radically decluttered UI for YouTube, as a browser extension for Chrome, Edge,
+Firefox and other Chromium browsers. Unlike other extensions, it doesn't alter the
+YouTube page itself: its toolbar button opens an entirely new page with just your
+subscriptions, your Home feed, Watch later and History, without Shorts or shelves,
+using the YouTube account you're logged in with.
 
-The toolbar button opens the yt3k page, a single-page app with these tabs:
+Built with [WXT](https://wxt.dev), React and [Astryx](https://astryx.atmeta.com).
+
+It has these tabs:
 
 - **Subs**: all subscribed channels ordered by their latest upload, each
   with its 3 most recent videos (no Shorts, with view counts and lengths) and an
@@ -31,7 +36,6 @@ embedded open on YouTube in a new tab instead. The player's minimize button shri
 it into the bottom right corner, where it keeps playing while you browse, also
 on the other tabs.
 
-yt3k talks to YouTube as the account you're logged in with in the same browser.
 The theme switch in the top bar picks System, Light or Dark.
 
 ## Disclaimer
