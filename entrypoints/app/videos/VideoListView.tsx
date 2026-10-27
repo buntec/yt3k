@@ -9,12 +9,14 @@ import { EmptyState } from '@astryxdesign/core/EmptyState';
 import { Grid } from '@astryxdesign/core/Grid';
 import { Icon } from '@astryxdesign/core/Icon';
 import { Layout, LayoutContent, LayoutHeader } from '@astryxdesign/core/Layout';
+import { Selector } from '@astryxdesign/core/Selector';
 import { HStack, StackItem, VStack } from '@astryxdesign/core/Stack';
 import { Heading, Text } from '@astryxdesign/core/Text';
 import { useToast } from '@astryxdesign/core/Toast';
 import { VisuallyHidden } from '@astryxdesign/core/VisuallyHidden';
 import type { ListedVideo, MetadataPart } from '@/utils/youtube';
 import { PlayableLink } from '../player';
+import { COLUMN_CHOICES, type Columns, setColumns, useColumns } from './columns';
 import type { Removal, VideoList, VideoListState } from './list';
 
 export type ShowToast = ReturnType<typeof useToast>;
@@ -44,6 +46,7 @@ export function VideoListView({
   actions: (video: ListedVideo) => VideoAction[];
 }) {
   const { videos, continuation, loading, error, removalError, removals } = list.use();
+  const columns = useColumns();
   const status = loading === 'refresh' ? loadingText : (error ?? removalError);
 
   // Removing a channel hides its other videos as well.
@@ -65,6 +68,14 @@ export function VideoListView({
                 </Text>
               </span>
             </StackItem>
+            <Selector
+              label="Videos per row"
+              isLabelHidden
+              variant="secondary"
+              options={COLUMN_CHOICES.map((n) => ({ value: String(n), label: `${n} per row` }))}
+              value={String(columns)}
+              onChange={(value) => setColumns(Number(value) as Columns)}
+            />
             <Button
               label="Refresh"
               isLoading={loading === 'refresh'}
@@ -85,7 +96,9 @@ export function VideoListView({
               {groupByDay(videos).map((group, i) => (
                 <VStack key={i} as="section" gap={4}>
                   {group.day && <Heading level={2}>{group.day}</Heading>}
-                  <Grid columns={{ minWidth: 300, max: 4 }} columnGap={4} rowGap={8}>
+                  {/* The chosen number of columns, unless the window is too
+                      narrow for cards of a still readable width */}
+                  <Grid columns={{ minWidth: 160, max: columns }} columnGap={4} rowGap={8}>
                     {group.videos.map((video) => {
                       const removal = removals[video.id];
                       if (removal) {
