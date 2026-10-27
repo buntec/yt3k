@@ -149,6 +149,21 @@ export async function refresh(force: boolean) {
   }
 }
 
+/**
+ * Loads one channel's videos again, e.g. after watching one of them here, to
+ * show how much of it was watched.
+ */
+export async function refreshChannel(channelId: string) {
+  try {
+    const videos = await fetchLatestVideos(channelId, VIDEOS_PER_CHANNEL);
+    const feeds = { ...state.feeds, [channelId]: { fetchedAt: Date.now(), videos } };
+    await feedsItem.setValue(feeds);
+    update({ feeds });
+  } catch (err) {
+    console.warn(err);
+  }
+}
+
 /** Unsubscribes and drops the channel from the list; throws if that fails. */
 export async function unsubscribeFrom(channel: Channel) {
   try {

@@ -25,7 +25,13 @@ import { VisuallyHidden } from '@astryxdesign/core/VisuallyHidden';
 import type { Channel, Video } from '@/utils/youtube';
 import { PlayableLink } from '../player';
 import { saveToWatchLater } from '../watch-later/store';
-import { type Feed, refresh, unsubscribeFrom, useSubscriptions } from './store';
+import {
+  type Feed,
+  refresh,
+  refreshChannel,
+  unsubscribeFrom,
+  useSubscriptions,
+} from './store';
 
 export function SubscriptionsPage() {
   const { channels, feeds, status, isRefreshing } = useSubscriptions();
@@ -205,7 +211,7 @@ const ChannelSection = memo(function ChannelSection({
         {videos.length ? (
           <Grid columns={{ minWidth: 280, max: 3 }} gap={4}>
             {videos.map((video) => (
-              <VideoLink key={video.id} video={video} />
+              <VideoLink key={video.id} video={video} channelId={channel.id} />
             ))}
           </Grid>
         ) : (
@@ -261,11 +267,16 @@ const compactNumber = new Intl.NumberFormat(undefined, {
   maximumFractionDigits: 1,
 });
 
-function VideoLink({ video }: { video: Video }) {
+function VideoLink({ video, channelId }: { video: Video; channelId: string }) {
   const showToast = useToast();
   return (
     <div className="video-item">
-      <PlayableLink className="video" video={video}>
+      <PlayableLink
+        className="video"
+        video={video}
+        // Shows how much of the video was watched in the player.
+        onPlayerClose={() => void refreshChannel(channelId)}
+      >
         <HStack gap={2} vAlign="start">
           <div className="thumbnail">
             <AspectRatio ratio={16 / 9} fit="cover">

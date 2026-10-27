@@ -5,7 +5,7 @@ import { extensionHost } from '@/utils/extension';
 import type { Video } from '@/utils/youtube';
 
 /** What the player needs to know about a video */
-export type PlayableVideo = Pick<Video, 'id' | 'title'>;
+export type PlayableVideo = Pick<Video, 'id' | 'title' | 'duration' | 'progress'>;
 
 const EMBED_ORIGIN = 'https://www.youtube.com';
 
@@ -35,7 +35,7 @@ const refererRule = browser.declarativeNetRequest.updateSessionRules({
   console.error('Could not set the embed Referer', err);
 });
 
-type OpenPlayer = (video: PlayableVideo) => void;
+type OpenPlayer = (video: PlayableVideo, options?: { onClose?: () => void }) => void;
 
 const PlayerContext = createContext<OpenPlayer>(() => {
   throw new Error('usePlayer() needs a <PlayerProvider>');
@@ -47,10 +47,14 @@ export function usePlayer(): OpenPlayer {
 }
 
 export function PlayerProvider({ children }: { children: React.ReactNode }) {
-  const [current, setCurrent] = useState<{ video: PlayableVideo; src: string }>();
+  const [current, setCurrent] = useState<{
+    video: PlayableVideo;
+    src: string;
+    onClose?: () => void;
+  }>();
   const frameRef = useRef<HTMLIFrameElement>(null);
 
-  const openPlayer = useCallback(async (video: PlayableVideo) => {
+  const openPlayer = useCallback<OpenPlayer>(async (video, { onClose } = {}) => {
     await refererRule;
     const params = new URLSearchParams({
       autoplay: '1',
@@ -59,8 +63,16 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       enablejsapi: '1',
       origin: location.origin,
     });
-    setCurrent({ video, src: `${EMBED_ORIGIN}/embed/${video.id}?${params}` });
+    // Embeds always start from the beginning, so pick up where the user left off.
+    const start = resumePosition(video);
+    if (start) params.set('start', String(start));
+    setCurrent({ video, src: `${EMBED_ORIGIN}/embed/${video.id}?${params}`, onClose });
   }, []);
+
+  const closePlayer = () => {
+    setCurrent(undefined);
+    current?.onClose?.();
+  };
 
   useEffect(() => {
     if (!current) return;
@@ -78,7 +90,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       // plays on YouTube itself.
       if (data.event === 'onError') {
         console.warn(`Embedded player error ${data.info}, opening on YouTube`);
-        setCurrent(undefined);
+        closePlayer();
         void openTabNextToThisOne(watchUrl(current.video));
       }
     };
@@ -99,7 +111,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       {children}
       <Dialog
         isOpen={current !== undefined}
-        onOpenChange={(isOpen) => !isOpen && setCurrent(undefined)}
+        onOpenChange={(isOpen) => !isOpen && closePlayer()}
         // Keep the whole 16:9 video plus title bar inside the viewport.
         width="min(1200px, 100vw - 48px, (100dvh - 120px) * 16 / 9)"
         maxHeight="none"
@@ -116,7 +128,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
                   href={watchUrl(current.video)}
                 />
               }
-              onOpenChange={() => setCurrent(undefined)}
+              onOpenChange={closePlayer}
             />
             <iframe
               ref={frameRef}
@@ -139,8 +151,13 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
  */
 export function PlayableLink({
   video,
+  onPlayerClose,
   ...props
-}: { video: PlayableVideo } & Omit<React.ComponentProps<'a'>, 'href' | 'onClick'>) {
+}: {
+  video: PlayableVideo;
+  /** Called when the embedded player this link opened is closed */
+  onPlayerClose?: () => void;
+} & Omit<React.ComponentProps<'a'>, 'href' | 'onClick'>) {
   const openPlayer = usePlayer();
   return (
     <a
@@ -151,10 +168,26 @@ export function PlayableLink({
           return;
         }
         event.preventDefault();
-        openPlayer(video);
+        openPlayer(video, { onClose: onPlayerClose });
       }}
     />
   );
+}
+
+/**
+ * Seconds into the video where the user stopped watching it, if they started
+ * and didn't (nearly) finish it. As precise as the whole percent YouTube tells.
+ */
+function resumePosition({ duration, progress }: PlayableVideo): number | undefined {
+  const seconds = duration && parseDuration(duration);
+  if (!seconds || !progress || progress >= 95) return undefined;
+  return Math.floor((seconds * progress) / 100);
+}
+
+/** Seconds in a duration badge like "21:52" or "1:02:03"; undefined for e.g. "LIVE" */
+function parseDuration(text: string): number | undefined {
+  if (!/^\d+(:\d\d){1,2}$/.test(text)) return undefined;
+  return text.split(':').reduce((seconds, part) => seconds * 60 + Number(part), 0);
 }
 
 export function watchUrl(video: PlayableVideo) {
