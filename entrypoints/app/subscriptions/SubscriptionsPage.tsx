@@ -26,6 +26,8 @@ import type { Channel, Video } from '@/utils/youtube';
 import { PlayableLink } from '../player';
 import { useSearchShortcut } from '../search';
 import { saveToWatchLater } from '../watch-later/store';
+import { useGroupFilter, useGroups } from './groups';
+import { AddToGroupButton, GroupTokens, GroupsNav } from './GroupControls';
 import {
   type Feed,
   refresh,
@@ -43,6 +45,12 @@ import {
 export function SubscriptionsPage() {
   const { channels, feeds, status, isRefreshing } = useSubscriptions();
   const videosPerChannel = useVideosPerChannel();
+  const { groups, isLoaded: groupsLoaded } = useGroups();
+  const storedFilter = useGroupFilter();
+  // A group deleted meanwhile, e.g. in another tab, leaves all channels shown.
+  const filterGroup = groups.find((g) => g.id === storedFilter);
+  const filter =
+    storedFilter === 'ungrouped' || filterGroup || !groupsLoaded ? storedFilter : 'all';
   const [query, setQuery] = useState('');
   const deferredQuery = useDeferredValue(query.trim().toLowerCase());
   const searchRef = useRef<HTMLInputElement>(null);
@@ -57,23 +65,46 @@ export function SubscriptionsPage() {
     return () => document.removeEventListener('visibilitychange', onVisibilityChange);
   }, []);
 
+  const inFilter = useMemo(() => {
+    if (filter === 'all') return () => true;
+    if (filter === 'ungrouped') {
+      const grouped = new Set(groups.flatMap((g) => g.channelIds));
+      return (c: Channel) => !grouped.has(c.id);
+    }
+    const ids = new Set(groups.find((g) => g.id === filter)?.channelIds);
+    return (c: Channel) => ids.has(c.id);
+  }, [filter, groups]);
+
   const visible = useMemo(() => {
     const keys = new Map(channels.map((c) => [c.id, recency(feeds[c.id])]));
     return [...channels]
       .sort((a, b) => compareRecency(keys.get(a.id)!, keys.get(b.id)!))
-      .filter((c) => matchesQuery(c, feeds[c.id], videosPerChannel, deferredQuery));
-  }, [channels, feeds, videosPerChannel, deferredQuery]);
+      .filter(
+        (c) => inFilter(c) && matchesQuery(c, feeds[c.id], videosPerChannel, deferredQuery),
+      );
+  }, [channels, feeds, videosPerChannel, deferredQuery, inFilter]);
 
   // Only the first channels render, and more as the end of the list scrolls
   // into view: hundreds of them at once make the page slow to show. A new
-  // search starts again from the top.
+  // search or group starts again from the top.
   const [shownCount, setShownCount] = useState(CHANNELS_PER_PAGE);
-  const [shownQuery, setShownQuery] = useState(deferredQuery);
-  if (shownQuery !== deferredQuery) {
-    setShownQuery(deferredQuery);
+  const [shownView, setShownView] = useState({ query: deferredQuery, filter });
+  if (shownView.query !== deferredQuery || shownView.filter !== filter) {
+    setShownView({ query: deferredQuery, filter });
     setShownCount(CHANNELS_PER_PAGE);
   }
   const shown = visible.slice(0, shownCount);
+
+  // Another group, e.g. picked by a channel's token far down the list, shows
+  // from its top. Only on a change, as Activity runs effects again whenever
+  // the page is shown.
+  const contentRef = useRef<HTMLDivElement>(null);
+  const scrolledFilter = useRef(filter);
+  useEffect(() => {
+    if (scrolledFilter.current === filter) return;
+    scrolledFilter.current = filter;
+    contentRef.current?.scrollTo({ top: 0 });
+  }, [filter]);
 
   return (
     <Layout
@@ -119,10 +150,22 @@ export function SubscriptionsPage() {
           </HStack>
         </LayoutHeader>
       }
+      start={<GroupsNav channels={channels} filter={filter} />}
       content={
-        <LayoutContent padding={6}>
-          {deferredQuery && visible.length === 0 ? (
-            <EmptyState title="No matching channels" headingLevel={2} isCompact />
+        <LayoutContent ref={contentRef} padding={6}>
+          {visible.length === 0 && channels.length > 0 && groupsLoaded ? (
+            <EmptyState
+              headingLevel={2}
+              isCompact
+              {...(deferredQuery
+                ? { title: 'No matching channels' }
+                : filter === 'ungrouped'
+                  ? { title: 'Every channel is in a group' }
+                  : {
+                      title: `No channels in ${filterGroup?.name}`,
+                      description: 'Add channels with the Add to group button next to each.',
+                    })}
+            />
           ) : (
             <VStack gap={4}>
               {shown.map((channel, i) => (
@@ -236,23 +279,30 @@ const ChannelSection = memo(function ChannelSection({
   return (
     <section>
       <VStack gap={3}>
-        <HStack gap={4} vAlign="center" hAlign="between">
-          <a
-            className="channel-header"
-            href={`https://www.youtube.com/channel/${channel.id}/videos`}
-          >
-            <HStack gap={2} vAlign="center">
-              <Avatar src={channel.avatar} name={channel.title} size={32} tooltip={false} />
-              <span className="channel-title">
-                <Text weight="medium" size="base">
-                  {channel.title}
-                </Text>
-              </span>
-              {videos[0] && (
-                <Age published={videos[0].published} />
-              )}
+        <HStack gap={2} vAlign="center">
+          <StackItem size="fill">
+            <HStack gap={2} vAlign="center" wrap="wrap">
+              <a
+                className="channel-header"
+                href={`https://www.youtube.com/channel/${channel.id}/videos`}
+              >
+                <HStack gap={2} vAlign="center">
+                  <Avatar src={channel.avatar} name={channel.title} size={32} tooltip={false} />
+                  <span className="channel-title">
+                    <Text weight="medium" size="base">
+                      {channel.title}
+                    </Text>
+                  </span>
+                  {videos[0] && (
+                    <Age published={videos[0].published} />
+                  )}
+                </HStack>
+              </a>
+              {/* Outside the link, which can't hold their buttons */}
+              <GroupTokens channelId={channel.id} />
             </HStack>
-          </a>
+          </StackItem>
+          <AddToGroupButton channel={channel} />
           <UnsubscribeButton channel={channel} />
         </HStack>
         {videos.length ? (
