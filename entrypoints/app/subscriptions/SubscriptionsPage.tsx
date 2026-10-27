@@ -15,6 +15,7 @@ import { Divider } from '@astryxdesign/core/Divider';
 import { EmptyState } from '@astryxdesign/core/EmptyState';
 import { Grid } from '@astryxdesign/core/Grid';
 import { Layout, LayoutContent, LayoutHeader } from '@astryxdesign/core/Layout';
+import { Selector } from '@astryxdesign/core/Selector';
 import { HStack, StackItem, VStack } from '@astryxdesign/core/Stack';
 import { Icon } from '@astryxdesign/core/Icon';
 import { Heading, Text } from '@astryxdesign/core/Text';
@@ -32,9 +33,16 @@ import {
   unsubscribeFrom,
   useSubscriptions,
 } from './store';
+import {
+  VIDEOS_PER_CHANNEL_CHOICES,
+  type VideosPerChannel,
+  setVideosPerChannel,
+  useVideosPerChannel,
+} from './videosPerChannel';
 
 export function SubscriptionsPage() {
   const { channels, feeds, status, isRefreshing } = useSubscriptions();
+  const videosPerChannel = useVideosPerChannel();
   const [query, setQuery] = useState('');
   const deferredQuery = useDeferredValue(query.trim().toLowerCase());
   const searchRef = useRef<HTMLInputElement>(null);
@@ -53,8 +61,8 @@ export function SubscriptionsPage() {
     const keys = new Map(channels.map((c) => [c.id, recency(feeds[c.id])]));
     return [...channels]
       .sort((a, b) => compareRecency(keys.get(a.id)!, keys.get(b.id)!))
-      .filter((c) => matchesQuery(c, feeds[c.id], deferredQuery));
-  }, [channels, feeds, deferredQuery]);
+      .filter((c) => matchesQuery(c, feeds[c.id], videosPerChannel, deferredQuery));
+  }, [channels, feeds, videosPerChannel, deferredQuery]);
 
   // Only the first channels render, and more as the end of the list scrolls
   // into view: hundreds of them at once make the page slow to show. A new
@@ -92,6 +100,17 @@ export function SubscriptionsPage() {
                 </Text>
               </span>
             </StackItem>
+            <Selector
+              label="Videos per channel"
+              isLabelHidden
+              variant="secondary"
+              options={VIDEOS_PER_CHANNEL_CHOICES.map((n) => ({
+                value: String(n),
+                label: `${n} per channel`,
+              }))}
+              value={String(videosPerChannel)}
+              onChange={(value) => setVideosPerChannel(Number(value) as VideosPerChannel)}
+            />
             <Button
               label="Refresh"
               isLoading={isRefreshing}
@@ -109,7 +128,11 @@ export function SubscriptionsPage() {
               {shown.map((channel, i) => (
                 <VStack key={channel.id} gap={4}>
                   {i > 0 && <Divider />}
-                  <ChannelSection channel={channel} feed={feeds[channel.id]} />
+                  <ChannelSection
+                    channel={channel}
+                    feed={feeds[channel.id]}
+                    videosPerChannel={videosPerChannel}
+                  />
                 </VStack>
               ))}
               {shown.length < visible.length && (
@@ -184,10 +207,16 @@ function compareRecency(a: number[], b: number[]) {
   return 0;
 }
 
-/** Whether the channel name or one of its listed video titles contains the query. */
-function matchesQuery(channel: Channel, feed: Feed | undefined, query: string) {
+/** Whether the channel name or one of its shown video titles contains the query. */
+function matchesQuery(
+  channel: Channel,
+  feed: Feed | undefined,
+  videosPerChannel: number,
+  query: string,
+) {
   if (!query) return true;
-  return [channel.title, ...(feed?.videos ?? []).map((v) => v.title)].some((text) =>
+  const videos = (feed?.videos ?? []).slice(0, videosPerChannel);
+  return [channel.title, ...videos.map((v) => v.title)].some((text) =>
     text.toLowerCase().includes(query),
   );
 }
@@ -197,11 +226,13 @@ function matchesQuery(channel: Channel, feed: Feed | undefined, query: string) {
 const ChannelSection = memo(function ChannelSection({
   channel,
   feed,
+  videosPerChannel,
 }: {
   channel: Channel;
   feed: Feed | undefined;
+  videosPerChannel: number;
 }) {
-  const videos = feed?.videos ?? [];
+  const videos = (feed?.videos ?? []).slice(0, videosPerChannel);
   return (
     <section>
       <VStack gap={3}>
@@ -225,7 +256,15 @@ const ChannelSection = memo(function ChannelSection({
           <UnsubscribeButton channel={channel} />
         </HStack>
         {videos.length ? (
-          <Grid columns={{ minWidth: 280, max: 3 }} gap={4}>
+          // All the chosen videos in one row, unless the window is too narrow
+          // for them; fewer than 3 keep the width they have in a row of 3.
+          <Grid
+            columns={{
+              minWidth: videosPerChannel > 3 ? 200 : 280,
+              max: Math.max(3, videosPerChannel),
+            }}
+            gap={4}
+          >
             {videos.map((video) => (
               <VideoLink key={video.id} video={video} channelId={channel.id} />
             ))}

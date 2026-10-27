@@ -23,7 +23,9 @@
 
 .thumbnail {
   position: relative;
-  flex: 0 0 144px;
+  /* Smaller in the narrower cells of 4 or 5 videos per row, leaving room
+     for the title */
+  flex: 0 0 min(144px, 45%);
   overflow: hidden;
   border-radius: 6px;
   background: var(--color-background-surface);

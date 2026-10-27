@@ -6,6 +6,7 @@ import {
   fetchSubscriptions,
   unsubscribe,
 } from '@/utils/youtube';
+import { MAX_VIDEOS_PER_CHANNEL } from './videosPerChannel';
 
 export interface Feed {
   fetchedAt: number;
@@ -21,7 +22,6 @@ export interface SubscriptionsState {
   isRefreshing: boolean;
 }
 
-const VIDEOS_PER_CHANNEL = 3;
 const FEED_MAX_AGE = 15 * 60 * 1000;
 const CONCURRENT_REQUESTS = 8;
 
@@ -30,7 +30,7 @@ const subscriptionsItem = storage.defineItem<Channel[]>('local:subscriptions', {
 });
 const feedsItem = storage.defineItem<Feeds>('local:feeds', {
   fallback: {},
-  version: 6,
+  version: 7,
   migrations: {
     // Version 2 adds view counts: load all feeds again rather than show
     // videos without them until each feed gets old enough to be refreshed.
@@ -45,6 +45,9 @@ const feedsItem = storage.defineItem<Feeds>('local:feeds', {
     // Version 6 dates videos in the middle of their ages' ranges rather than
     // at their start, which sorting by age relies on.
     6: () => ({}),
+    // Version 7 keeps 5 videos per channel rather than 3, of which the
+    // page shows as many as chosen.
+    7: () => ({}),
   },
 });
 
@@ -127,7 +130,7 @@ export async function refresh(force: boolean) {
     let failed = 0;
     await forEachConcurrently(stale, CONCURRENT_REQUESTS, async (channel) => {
       try {
-        const videos = await fetchLatestVideos(channel.id, VIDEOS_PER_CHANNEL);
+        const videos = await fetchLatestVideos(channel.id, MAX_VIDEOS_PER_CHANNEL);
         feeds[channel.id] = { fetchedAt: Date.now(), videos };
       } catch (err) {
         failed++;
@@ -158,7 +161,7 @@ export async function refresh(force: boolean) {
  */
 export async function refreshChannel(channelId: string) {
   try {
-    const videos = await fetchLatestVideos(channelId, VIDEOS_PER_CHANNEL);
+    const videos = await fetchLatestVideos(channelId, MAX_VIDEOS_PER_CHANNEL);
     const feeds = { ...state.feeds, [channelId]: { fetchedAt: Date.now(), videos } };
     await feedsItem.setValue(feeds);
     update({ feeds });
