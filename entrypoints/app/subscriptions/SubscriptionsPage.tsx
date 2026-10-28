@@ -32,6 +32,7 @@ import {
   type Feed,
   refresh,
   refreshChannel,
+  refreshStaleFeeds,
   unsubscribeFrom,
   useSubscriptions,
 } from './store';
@@ -56,13 +57,18 @@ export function SubscriptionsPage() {
   const searchRef = useRef<HTMLInputElement>(null);
   useSearchShortcut(searchRef);
 
-  // Coming back to the browser tab updates the feeds that got old meanwhile.
+  // Updates the feeds that got old, every minute while the page is shown and
+  // right away on coming back to the browser tab.
   useEffect(() => {
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') void refresh(false);
+    const refreshIfVisible = () => {
+      if (document.visibilityState === 'visible') void refreshStaleFeeds();
     };
-    document.addEventListener('visibilitychange', onVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+    const timer = setInterval(refreshIfVisible, 60 * 1000);
+    document.addEventListener('visibilitychange', refreshIfVisible);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', refreshIfVisible);
+    };
   }, []);
 
   const inFilter = useMemo(() => {

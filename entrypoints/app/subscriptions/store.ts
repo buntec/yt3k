@@ -91,8 +91,23 @@ async function load() {
   await refresh(false);
 }
 
-export async function refresh(force: boolean) {
+/**
+ * Loads the subscriptions again, then their feeds: all of them if forced,
+ * else only those that got old.
+ */
+export function refresh(force: boolean) {
+  return reload({ subscriptions: true, force });
+}
+
+/** Loads the feeds that got old again, keeping the list of subscriptions. */
+export function refreshStaleFeeds() {
+  return reload({ subscriptions: false, force: false });
+}
+
+async function reload(options: { subscriptions: boolean; force: boolean }) {
   if (state.isRefreshing) return;
+  // Leave the page alone when there's nothing to do, as on most timed updates.
+  if (!options.subscriptions && staleChannels(false).length === 0) return;
   update({ isRefreshing: true });
   // Mutated as feeds arrive and published in batches by scheduleUpdate().
   let feeds = state.feeds;
@@ -108,24 +123,24 @@ export async function refresh(force: boolean) {
   };
 
   try {
-    setStatus('Loading subscriptions…');
-    try {
-      const channels = await fetchSubscriptions();
-      await subscriptionsItem.setValue(channels);
-      feeds = Object.fromEntries(
-        channels.filter((c) => feeds[c.id]).map((c) => [c.id, feeds[c.id]]),
-      );
-      update({ channels, feeds });
-    } catch (err) {
-      // Without a fresh list, keep going with the cached one if there is one.
-      if (state.channels.length === 0) throw err;
-      console.warn(err);
+    if (options.subscriptions) {
+      setStatus('Loading subscriptions…');
+      try {
+        const channels = await fetchSubscriptions();
+        await subscriptionsItem.setValue(channels);
+        feeds = Object.fromEntries(
+          channels.filter((c) => feeds[c.id]).map((c) => [c.id, feeds[c.id]]),
+        );
+        update({ channels, feeds });
+      } catch (err) {
+        // Without a fresh list, keep going with the cached one if there is one.
+        if (state.channels.length === 0) throw err;
+        console.warn(err);
+      }
     }
 
     feeds = { ...feeds };
-    const stale = state.channels.filter(
-      (c) => force || Date.now() - (feeds[c.id]?.fetchedAt ?? 0) > FEED_MAX_AGE,
-    );
+    const stale = staleChannels(options.force);
     let done = 0;
     let failed = 0;
     await forEachConcurrently(stale, CONCURRENT_REQUESTS, async (channel) => {
@@ -153,6 +168,12 @@ export async function refresh(force: boolean) {
   } finally {
     update({ isRefreshing: false });
   }
+}
+
+function staleChannels(force: boolean) {
+  return state.channels.filter(
+    (c) => force || Date.now() - (state.feeds[c.id]?.fetchedAt ?? 0) > FEED_MAX_AGE,
+  );
 }
 
 /**
