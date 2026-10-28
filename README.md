@@ -41,11 +41,14 @@ Download a build from the [releases](https://github.com/buntec/yt3k/releases):
 
 - **Chrome** and other Chromium browsers (Brave, Opera, Vivaldi, …): unzip
   `yt3k-x.y.z-chrome.zip`, then in `chrome://extensions` enable **Developer mode**,
-  click **Load unpacked** and select the unzipped folder.
+  click **Load unpacked** and select the unzipped folder. To update, do the same with
+  the new release: it replaces the old one and keeps your groups and subscriptions,
+  and you can delete the old folder.
 - **Edge**: the same with `yt3k-x.y.z-edge.zip` in `edge://extensions`.
-- **Firefox**: open `yt3k-x.y.z-firefox.xpi` in Firefox, if the release has one.
-  Otherwise load `yt3k-x.y.z-firefox.zip` in `about:debugging` → **This Firefox** →
-  **Load Temporary Add-on**; Firefox removes it again when it restarts.
+- **Firefox**: open `yt3k-x.y.z-firefox.xpi` in Firefox, if the release has one;
+  Firefox then updates it automatically. Otherwise load `yt3k-x.y.z-firefox.zip` in
+  `about:debugging` → **This Firefox** → **Load Temporary Add-on**; Firefox removes it
+  again when it restarts.
 
 ## Development
 
@@ -86,7 +89,8 @@ release. The version in `package.json` isn't used for releases.
 For a signed Firefox add-on (the `.xpi`), add API credentials from
 [addons.mozilla.org](https://addons.mozilla.org/developers/addon/api/key/) as the
 repository secrets `AMO_JWT_ISSUER` and `AMO_JWT_SECRET`. The workflow then signs
-the add-on for self-distribution (unlisted; it isn't published on the add-ons site).
+the add-on for self-distribution (unlisted; it isn't published on the add-ons site),
+and publishes the `updates.json` that installed copies check for updates.
 
 ## License
 

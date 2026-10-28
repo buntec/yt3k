@@ -32,7 +32,7 @@ test-watch *args:
 
 # Lint the Firefox build with web-ext
 lint-firefox: (build "firefox")
-    npx web-ext lint --source-dir .output/firefox-mv3
+    npx web-ext lint --self-hosted --source-dir .output/firefox-mv3
 
 # Check the Astryx usage in the source
 doctor:
