@@ -52,6 +52,7 @@ export function SubscriptionsPage() {
   const filterGroup = groups.find((g) => g.id === storedFilter);
   const filter =
     storedFilter === 'ungrouped' || filterGroup || !groupsLoaded ? storedFilter : 'all';
+  const [sort, setSort] = useState<Sort>('newest');
   const [query, setQuery] = useState('');
   const deferredQuery = useDeferredValue(foldForSearch(query.trim()));
   const searchRef = useRef<HTMLInputElement>(null);
@@ -83,20 +84,32 @@ export function SubscriptionsPage() {
 
   const visible = useMemo(() => {
     const keys = new Map(channels.map((c) => [c.id, recency(feeds[c.id])]));
+    const direction = sort === 'oldest' ? -1 : 1;
     return [...channels]
-      .sort((a, b) => compareRecency(keys.get(a.id)!, keys.get(b.id)!))
+      .sort((a, b) => {
+        // Channels still loading go last either way, rather than jump about
+        // at the top of the oldest first.
+        const isLoadingA = !feeds[a.id];
+        const isLoadingB = !feeds[b.id];
+        if (isLoadingA || isLoadingB) return Number(isLoadingA) - Number(isLoadingB);
+        return direction * compareRecency(keys.get(a.id)!, keys.get(b.id)!);
+      })
       .filter(
         (c) => inFilter(c) && matchesQuery(c, feeds[c.id], videosPerChannel, deferredQuery),
       );
-  }, [channels, feeds, videosPerChannel, deferredQuery, inFilter]);
+  }, [channels, feeds, sort, videosPerChannel, deferredQuery, inFilter]);
 
   // Only the first channels render, and more as the end of the list scrolls
   // into view: hundreds of them at once make the page slow to show. A new
-  // search or group starts again from the top.
+  // search, group or sort starts again from the top.
   const [shownCount, setShownCount] = useState(CHANNELS_PER_PAGE);
-  const [shownView, setShownView] = useState({ query: deferredQuery, filter });
-  if (shownView.query !== deferredQuery || shownView.filter !== filter) {
-    setShownView({ query: deferredQuery, filter });
+  const [shownView, setShownView] = useState({ query: deferredQuery, filter, sort });
+  if (
+    shownView.query !== deferredQuery ||
+    shownView.filter !== filter ||
+    shownView.sort !== sort
+  ) {
+    setShownView({ query: deferredQuery, filter, sort });
     setShownCount(CHANNELS_PER_PAGE);
   }
   const shown = visible.slice(0, shownCount);
@@ -139,6 +152,17 @@ export function SubscriptionsPage() {
                 </Text>
               </span>
             </StackItem>
+            <Selector
+              label="Sort channels"
+              isLabelHidden
+              variant="secondary"
+              options={SORT_OPTIONS}
+              value={sort}
+              onChange={(value) => {
+                setSort(value as Sort);
+                contentRef.current?.scrollTo({ top: 0 });
+              }}
+            />
             <Selector
               label="Videos per channel"
               isLabelHidden
@@ -201,6 +225,15 @@ export function SubscriptionsPage() {
 }
 
 const CHANNELS_PER_PAGE = 30;
+
+/** Which channels come first: those with the latest videos, or the oldest */
+type Sort = 'newest' | 'oldest';
+
+const SORT_OPTIONS: { value: Sort; label: string }[] = [
+  { value: 'newest', label: 'Recently updated first' },
+  // To find the channels that went quiet
+  { value: 'oldest', label: 'Least recently updated first' },
+];
 
 /** Shows more channels once the user scrolls near the end of the list. */
 function ShowMore({
