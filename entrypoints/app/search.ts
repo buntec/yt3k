@@ -12,3 +12,11 @@ export function useSearchShortcut(ref: RefObject<HTMLInputElement | null>) {
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [ref]);
 }
+
+/**
+ * Folds case and diacritics, so that "delic" finds "Délicieuse". Applied to
+ * both the query and the searched text.
+ */
+export function foldForSearch(text: string) {
+  return text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+}

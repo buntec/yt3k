@@ -17,7 +17,7 @@ import { useToast } from '@astryxdesign/core/Toast';
 import { VisuallyHidden } from '@astryxdesign/core/VisuallyHidden';
 import type { ListedVideo, MetadataPart } from '@/utils/youtube';
 import { PlayableLink } from '../player';
-import { useSearchShortcut } from '../search';
+import { foldForSearch, useSearchShortcut } from '../search';
 import { COLUMN_CHOICES, type Columns, setColumns, useColumns } from './columns';
 import type { Removal, VideoList, VideoListState } from './list';
 
@@ -51,7 +51,7 @@ export function VideoListView({
   const columns = useColumns();
   const status = loading === 'refresh' ? loadingText : (error ?? removalError);
   const [query, setQuery] = useState('');
-  const deferredQuery = useDeferredValue(query.trim().toLowerCase());
+  const deferredQuery = useDeferredValue(foldForSearch(query.trim()));
   const searchRef = useRef<HTMLInputElement>(null);
   useSearchShortcut(searchRef);
   const matching = deferredQuery
@@ -171,7 +171,7 @@ export function VideoListView({
  */
 function matchesQuery(video: ListedVideo, query: string) {
   return [video.title, video.channel?.title ?? ''].some((text) =>
-    text.toLowerCase().includes(query),
+    foldForSearch(text).includes(query),
   );
 }
 

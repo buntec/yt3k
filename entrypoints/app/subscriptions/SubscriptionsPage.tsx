@@ -24,7 +24,7 @@ import { useToast } from '@astryxdesign/core/Toast';
 import { VisuallyHidden } from '@astryxdesign/core/VisuallyHidden';
 import type { Channel, Video } from '@/utils/youtube';
 import { PlayableLink } from '../player';
-import { useSearchShortcut } from '../search';
+import { foldForSearch, useSearchShortcut } from '../search';
 import { saveToWatchLater } from '../watch-later/store';
 import { useGroupFilter, useGroups } from './groups';
 import { AddToGroupButton, GroupTokens, GroupsNav } from './GroupControls';
@@ -52,7 +52,7 @@ export function SubscriptionsPage() {
   const filter =
     storedFilter === 'ungrouped' || filterGroup || !groupsLoaded ? storedFilter : 'all';
   const [query, setQuery] = useState('');
-  const deferredQuery = useDeferredValue(query.trim().toLowerCase());
+  const deferredQuery = useDeferredValue(foldForSearch(query.trim()));
   const searchRef = useRef<HTMLInputElement>(null);
   useSearchShortcut(searchRef);
 
@@ -260,7 +260,7 @@ function matchesQuery(
   if (!query) return true;
   const videos = (feed?.videos ?? []).slice(0, videosPerChannel);
   return [channel.title, ...videos.map((v) => v.title)].some((text) =>
-    text.toLowerCase().includes(query),
+    foldForSearch(text).includes(query),
   );
 }
 
