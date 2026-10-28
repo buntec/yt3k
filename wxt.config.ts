@@ -28,8 +28,9 @@ export default defineConfig({
     ...(browser === 'firefox' && {
       browser_specific_settings: {
         gecko: {
-          // Firefox needs a fixed ID for MV3 add-ons and to sign them.
-          id: 'yt3k@buntec.github.io',
+          // Firefox needs a fixed ID for MV3 add-ons and to sign them. The dev
+          // build gets its own, so loading it doesn't hide an installed release.
+          id: command === 'serve' ? 'yt3k-dev@buntec.github.io' : 'yt3k@buntec.github.io',
           strict_min_version: '142.0',
           // Where a signed .xpi looks for updates; the release workflow
           // publishes this file next to it.
