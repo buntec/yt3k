@@ -7,6 +7,7 @@ import { Text } from '@astryxdesign/core/Text';
 import { Theme } from '@astryxdesign/core/theme';
 import { TopNav, TopNavHeading, TopNavItem } from '@astryxdesign/core/TopNav';
 import { defaultThemeSlug, themes } from '@/astryx-themes';
+import { AccountStatus } from './account';
 import { setAutoplay, useAutoplay } from './autoplay';
 import { FeedPage } from './feed/FeedPage';
 import { HistoryPage } from './history/HistoryPage';
@@ -84,6 +85,7 @@ export function App() {
                     <SegmentedControlItem value="light" label="Light" />
                     <SegmentedControlItem value="dark" label="Dark" />
                   </SegmentedControl>
+                  <AccountStatus />
                 </HStack>
               }
             />

@@ -66,6 +66,21 @@ export interface MetadataPart {
   hasPlayIcon: boolean;
 }
 
+/** The YouTube account requests are made as */
+export interface Account {
+  name: string;
+  /** e.g. "@name"; accounts without a channel have none */
+  handle?: string;
+  avatar?: string;
+}
+
+/** Thrown when there are no YouTube login cookies to sign requests with. */
+export class NotLoggedInError extends Error {
+  constructor() {
+    super('Not logged in to YouTube');
+  }
+}
+
 export interface VideoListPage {
   videos: ListedVideo[];
   /** Token for the next page, if there is one */
@@ -581,6 +596,32 @@ export async function unsubscribe(channel: Channel): Promise<void> {
   if (status !== 200) throw new Error(`Unsubscribe failed (${status})`);
 }
 
+/** The logged-in account, read from YouTube's account menu; undefined when logged out. */
+export async function fetchAccount(): Promise<Account | undefined> {
+  try {
+    const { status, data } = await innertubeRequest('account/account_menu', {});
+    if (status !== 200) throw new Error(`Loading the account failed (${status})`);
+    return parseAccountMenu(data);
+  } catch (err) {
+    if (err instanceof NotLoggedInError) return undefined;
+    throw err;
+  }
+}
+
+/** The account in the header of YouTube's account menu, which logged-out menus lack. */
+export function parseAccountMenu(data: unknown): Account | undefined {
+  const header = findAll(data, 'activeAccountHeaderRenderer')[0];
+  if (!header) return undefined;
+  const name =
+    header.accountName?.simpleText ??
+    header.accountName?.runs?.map((run: any) => run.text).join('');
+  return {
+    name: name ?? '',
+    handle: header.channelHandle?.simpleText,
+    avatar: absoluteUrl(header.accountPhoto?.thumbnails?.at(-1)?.url),
+  };
+}
+
 /**
  * Sends a request to YouTube's internal API as the logged-in user, signed the
  * way YouTube's web client signs its own requests.
@@ -652,7 +693,7 @@ async function authorization(): Promise<string> {
       .join('');
     parts.push(`${scheme} ${timestamp}_${hash}`);
   }
-  if (parts.length === 0) throw new Error('Not logged in to YouTube');
+  if (parts.length === 0) throw new NotLoggedInError();
   return parts.join(' ');
 }
 
