@@ -107,8 +107,10 @@ export function SubscriptionsPage() {
   }, [filter]);
 
   return (
+    // No contentWidth: with a side panel, Layout aligns the panel to the
+    // centered contentWidth frame, leaving a gap at the window's edge. The
+    // channels are capped instead, as wide as the lists on the other pages.
     <Layout
-      contentWidth={1200}
       header={
         <LayoutHeader hasDivider padding={6}>
           <HStack gap={4} vAlign="center" wrap="wrap">
@@ -167,7 +169,7 @@ export function SubscriptionsPage() {
                     })}
             />
           ) : (
-            <VStack gap={4}>
+            <VStack gap={4} maxWidth={1600}>
               {shown.map((channel, i) => (
                 <VStack key={channel.id} gap={4}>
                   {i > 0 && <Divider />}
