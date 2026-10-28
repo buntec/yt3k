@@ -3,6 +3,7 @@ import { AppShell } from '@astryxdesign/core/AppShell';
 import { SegmentedControl, SegmentedControlItem } from '@astryxdesign/core/SegmentedControl';
 import { HStack } from '@astryxdesign/core/Stack';
 import { Switch } from '@astryxdesign/core/Switch';
+import { Text } from '@astryxdesign/core/Text';
 import { Theme } from '@astryxdesign/core/theme';
 import { TopNav, TopNavHeading, TopNavItem } from '@astryxdesign/core/TopNav';
 import { defaultThemeSlug, themes } from '@/astryx-themes';
@@ -15,6 +16,9 @@ import { SubscriptionsPage } from './subscriptions/SubscriptionsPage';
 import { WatchLaterPage } from './watch-later/WatchLaterPage';
 import { type ThemeMode, setThemeMode, useThemeMode } from './theme';
 import { SharedTooltip } from './tooltip';
+
+// From package.json, which the release sets from its tag: 0.0.0 in dev builds.
+const VERSION = browser.runtime.getManifest().version;
 
 const PAGES: Record<Route, () => React.ReactNode> = {
   subscriptions: SubscriptionsPage,
@@ -61,6 +65,7 @@ export function App() {
               ))}
               endContent={
                 <HStack gap={4} vAlign="center">
+                  <Text type="supporting">v{VERSION}</Text>
                   <Switch
                     label="Autoplay"
                     labelTooltip="Videos that start on their own aren't added to your YouTube watch history"
