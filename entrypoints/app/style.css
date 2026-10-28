@@ -1,6 +1,13 @@
 /* What Astryx components don't cover: the logo, links wrapping rich content,
    sized thumbnails and the embedded player. Colors come from the theme's tokens. */
 
+/* The shell fills the viewport and scrolls inside, so the page itself never
+   scrolls, yet macOS still rubber-bands it when the wheel is outside the
+   list. Vertical only, to keep the two-finger swipe back and forward. */
+html {
+  overscroll-behavior-y: none;
+}
+
 .logo {
   display: block;
   width: var(--spacing-8);
