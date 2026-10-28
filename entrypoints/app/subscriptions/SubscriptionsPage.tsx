@@ -413,6 +413,8 @@ function VideoLink({ video, channelId }: { video: Video; channelId: string }) {
       <PlayableLink
         className="video"
         video={video}
+        // The full title, which may be cut short
+        data-tooltip={video.title}
         // Shows how much of the video was watched in the player.
         onPlayerClose={() => void refreshChannel(channelId)}
       >

@@ -14,6 +14,7 @@ import { ROUTES, type Route, routeHref, useRoute } from './router';
 import { SubscriptionsPage } from './subscriptions/SubscriptionsPage';
 import { WatchLaterPage } from './watch-later/WatchLaterPage';
 import { type ThemeMode, setThemeMode, useThemeMode } from './theme';
+import { SharedTooltip } from './tooltip';
 
 const PAGES: Record<Route, () => React.ReactNode> = {
   subscriptions: SubscriptionsPage,
@@ -90,6 +91,7 @@ export function App() {
           )}
           {route !== 'subscriptions' && <Page />}
         </AppShell>
+        <SharedTooltip />
       </PlayerProvider>
     </Theme>
   );

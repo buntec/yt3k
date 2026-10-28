@@ -249,7 +249,13 @@ const VideoCard = memo(function VideoCard({
       <VStack gap={3}>
         {/* The title links to the same video, so this one is skipped by
             keyboard and screen readers. */}
-        <PlayableLink video={video} className="card-thumbnail" tabIndex={-1} aria-hidden>
+        <PlayableLink
+          video={video}
+          className="card-thumbnail"
+          tabIndex={-1}
+          aria-hidden
+          data-tooltip={video.title}
+        >
           <AspectRatio ratio={16 / 9} fit="cover">
             <img src={video.thumbnail} alt="" loading="lazy" />
           </AspectRatio>
@@ -274,7 +280,9 @@ const VideoCard = memo(function VideoCard({
           )}
           <StackItem size="fill">
             <VStack gap={1}>
-              <PlayableLink video={video} className="video">
+              {/* Both links show the full title, which may be cut short, in a
+                  tooltip. */}
+              <PlayableLink video={video} className="video" data-tooltip={video.title}>
                 <span className="video-title">
                   <Text weight="medium" maxLines={2} hasTruncateTooltip={false}>
                     {video.title}
