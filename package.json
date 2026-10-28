@@ -1,6 +1,6 @@
 {
   "name": "yt3k",
-  "description": "UX improvements for YouTube",
+  "description": "A decluttered UI for YouTube",
   "private": true,
   "version": "0.0.0",
   "type": "module",

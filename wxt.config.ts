@@ -9,7 +9,7 @@ export default defineConfig({
   manifestVersion: 3,
   manifest: ({ browser }) => ({
     name: 'yt3k',
-    description: 'UX improvements for YouTube',
+    description: 'A decluttered UI for YouTube',
     // cookies: sign requests to YouTube's API like YouTube's web client does.
     // declarativeNetRequestWithHostAccess: give the embedded player a Referer,
     // and those API requests youtube.com as their origin.

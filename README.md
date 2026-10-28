@@ -1,42 +1,30 @@
 # yt3k
 
-A radically decluttered UI for YouTube, as a browser extension for Chrome, Edge,
-Firefox and other Chromium browsers. Unlike other extensions, it doesn't alter the
-YouTube page itself: its toolbar button opens an entirely new page with just your
-subscriptions, your Home feed, Watch later and History, without Shorts or shelves,
-using the YouTube account you're logged in with.
+A decluttered UI for YouTube, as a browser extension for Firefox, Chrome, Edge and
+other Chromium browsers. Improved subscription management using groups. Unlike
+other extensions, yt3k doesn't alter the YouTube page itself: its toolbar button
+opens a page in its own right. Uses the YouTube account you're logged in with in
+the same browser.
 
 Built with [WXT](https://wxt.dev), React and [Astryx](https://astryx.atmeta.com).
 
 It has these tabs:
 
-- **Subs**: all subscribed channels ordered by their latest upload, each
-  with its 3 most recent videos (no Shorts, with view counts and lengths) and an
-  unsubscribe button. Hovering a video shows a **Save to Watch later** button. A search bar
-  filters by channel name or video title (press `/` to focus it). The last loaded
-  list shows right away and is brought up to date in the background, and again
-  when you come back to its browser tab. Channels show 30 at a time, with more
-  as you scroll.
-- **Feed**: the videos YouTube recommends on its Home page (Shorts and other
-  shelves are left out). Each video's menu has **Save to Watch later**, **Not
-  interested** and **Don't recommend channel**, which do the same as on YouTube
-  and can be undone.
-- **Watch later**: the Watch later playlist, with **Remove from Watch later** in
-  each video's menu, which can be undone too.
-- **History**: the videos you watched, newest first under the day you watched
-  them (Shorts are left out). Each video's menu has **Save to Watch later** and
-  **Remove from watch history**, which can't be undone, like on YouTube. It loads
-  again each time you open the tab.
+- **Subs**: your subscriptions, most recent upload first, each with its latest 1–5
+  videos (no Shorts) and an unsubscribe button. Sort channels into colored groups
+  and filter by group in the sidebar; groups can be exported to a file and imported
+  again.
+- **Feed**: YouTube's Home recommendations, without Shorts or shelves. **Not
+  interested** and **Don't recommend channel** work as on YouTube.
+- **Watch later**: your Watch later playlist.
+- **History**: the videos you watched, by day, without Shorts. Videos can be
+  removed from it.
 
-In Feed, Watch later and History, scrolling to the bottom loads the next batch, and partly
-watched videos show how far you got, like on YouTube.
-
-Clicking a video plays it in an embedded player on the page; videos that can't be
-embedded open on YouTube in a new tab instead. The player's minimize button shrinks
-it into the bottom right corner, where it keeps playing while you browse, also
-on the other tabs.
-
-The theme switch in the top bar picks System, Light or Dark.
+Every tab has a search bar (press `/`), and any video can be saved to or removed
+from Watch later. Videos play in an embedded player that can be minimized into a
+corner to keep playing while you browse. The top bar has an **Autoplay** switch
+(off by default, since YouTube leaves autoplayed videos out of your watch history)
+and a theme switch.
 
 ## Disclaimer
 
