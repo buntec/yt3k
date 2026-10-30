@@ -4,6 +4,7 @@ import { useSyncExternalStore } from 'react';
 // to index.html, so a reload on a path route would not find the page.
 export const ROUTES = {
   subscriptions: 'Subs',
+  live: 'Live',
   feed: 'Feed',
   'watch-later': 'Watch later',
   history: 'History',

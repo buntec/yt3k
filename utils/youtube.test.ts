@@ -1,17 +1,23 @@
 import { describe, expect, it } from 'vitest';
+import channelHeader from './__fixtures__/channel-header.json';
+import channelLive from './__fixtures__/channel-live.json';
 import channelVideos from './__fixtures__/channel-videos.json';
 import history from './__fixtures__/history.json';
 import historyContinuation from './__fixtures__/history-continuation.json';
 import home from './__fixtures__/home.json';
 import homeContinuation from './__fixtures__/home-continuation.json';
 import subscriptions from './__fixtures__/subscriptions.json';
+import subscriptionsFeed from './__fixtures__/subscriptions-feed.json';
 import watchLater from './__fixtures__/watch-later.json';
 import {
+  parseChannelIsLive,
   parseChannelVideos,
   parseHistoryContinuation,
   parseHistoryPage,
   parseHomeContinuation,
   parseHomePage,
+  parseLiveStreams,
+  parseSubscriptionsFeedLiveStreams,
   parseSubscriptionsPage,
   parseWatchLaterContinuation,
   parseWatchLaterPage,
@@ -52,6 +58,7 @@ describe('parseHomePage', () => {
       thumbnail: 'https://i.ytimg.com/vi/video000001/hqdefault.jpg',
       duration: '3:38',
       channel: {
+        id: 'UCchannel000000000000001',
         title: 'Text 9',
         url: 'https://www.youtube.com/@channel1',
         avatar: 'https://yt3.ggpht.com/image-3',
@@ -80,6 +87,7 @@ describe('parseHomePage', () => {
   it('links collaborations to their first channel', () => {
     const collab = videos[1]!;
     expect(collab.channel).toEqual({
+      id: 'UCchannel000000000000002',
       title: 'Text 33',
       url: 'https://www.youtube.com/channel/UCchannel000000000000002',
       avatar: 'https://yt3.ggpht.com/image-6',
@@ -136,6 +144,7 @@ describe('parseHomeContinuation', () => {
       thumbnail: 'https://i.ytimg.com/vi/video000012/hqdefault.jpg',
       duration: '4:27:00',
       channel: {
+        id: 'UCchannel000000000000011',
         title: 'Text 134',
         url: 'https://www.youtube.com/@channel8',
         avatar: 'https://yt3.ggpht.com/image-31',
@@ -262,6 +271,7 @@ describe('parseHistoryPage', () => {
       duration: '59:33',
       progress: 59,
       channel: {
+        id: 'UCchannel000000000000020',
         title: 'Text 230',
         url: 'https://www.youtube.com/@channel16',
         avatar: 'https://yt3.ggpht.com/image-54',
@@ -495,5 +505,82 @@ describe('parseChannelVideos', () => {
 
   it('returns nothing for a channel without videos', () => {
     expect(parseChannelVideos({ contents: {} }, now)).toEqual([]);
+  });
+});
+
+describe('parseChannelIsLive', () => {
+  it('reads the LIVE badge on the avatar in the header', () => {
+    expect(parseChannelIsLive(channelLive)).toBe(true);
+  });
+
+  it('is false for a channel without one', () => {
+    expect(parseChannelIsLive(channelHeader)).toBe(false);
+  });
+
+  it('is false for a response without a header', () => {
+    expect(parseChannelIsLive(channelVideos)).toBe(false);
+    expect(parseChannelIsLive(null)).toBe(false);
+  });
+});
+
+describe('parseLiveStreams', () => {
+  const channel = {
+    id: 'UCchannel000000000000004',
+    title: 'Channel',
+    avatar: 'https://yt3.ggpht.com/image-1',
+  };
+
+  it('reads the streams on now, with the channel it was given', () => {
+    expect(parseLiveStreams(channelLive, channel)).toEqual([
+      {
+        id: 'video000003',
+        title: 'Text 31',
+        thumbnail: 'https://i.ytimg.com/vi/video000003/hqdefault.jpg',
+        duration: 'LIVE',
+        channel: {
+          id: 'UCchannel000000000000004',
+          title: 'Channel',
+          url: 'https://www.youtube.com/channel/UCchannel000000000000004',
+          avatar: 'https://yt3.ggpht.com/image-1',
+        },
+        details: [{ text: '21 watching', label: '21 watching', hasPlayIcon: false }],
+        feedback: {},
+      },
+    ]);
+  });
+
+  it('skips upcoming streams', () => {
+    // video000011 and video000012 are upcoming in the fixture.
+    expect(parseLiveStreams(channelLive, channel).map((v) => v.id)).toEqual(['video000003']);
+  });
+
+  it('returns nothing for a channel without a Live tab', () => {
+    expect(parseLiveStreams(channelHeader, channel)).toEqual([]);
+  });
+});
+
+describe('parseSubscriptionsFeedLiveStreams', () => {
+  const streams = parseSubscriptionsFeedLiveStreams(subscriptionsFeed);
+
+  it('reads only the streams on now, skipping videos and shelves', () => {
+    expect(streams.map((v) => v.id)).toEqual(['video000003', 'video000004', 'video000005']);
+  });
+
+  it('reads the channel from the link on its name, as the avatar links to the stream', () => {
+    expect(streams[0]).toMatchObject({
+      title: 'Text 31',
+      duration: 'LIVE',
+      channel: {
+        id: 'UCchannel000000000000003',
+        title: 'Text 34',
+        url: 'https://www.youtube.com/@channel3',
+        avatar: 'https://yt3.ggpht.com/image-8',
+      },
+      details: [{ text: '21 watching', label: '21 watching', hasPlayIcon: false }],
+    });
+  });
+
+  it('returns nothing for an unrelated response', () => {
+    expect(parseSubscriptionsFeedLiveStreams({})).toEqual([]);
   });
 });

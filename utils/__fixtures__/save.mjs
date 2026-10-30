@@ -13,6 +13,9 @@ const FILES = {
   watchLater: 'watch-later.json',
   history: 'history.json',
   historyContinuation: 'history-continuation.json',
+  subscriptionsFeed: 'subscriptions-feed.json',
+  channelLive: 'channel-live.json',
+  channelHeader: 'channel-header.json',
 };
 
 const only = process.argv.slice(2);

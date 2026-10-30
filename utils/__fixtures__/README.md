@@ -14,6 +14,12 @@ random, and colors taken from thumbnails are left out.
 - `watch-later.json`: the playlist part of the Watch later page's `ytInitialData`
 - `history.json`: the day sections of the History page's `ytInitialData`
 - `history-continuation.json`: YouTube's API response for the next part of History
+- `subscriptions-feed.json`: YouTube's API response for the subscriptions feed,
+  with a few of the live streams at its top
+- `channel-live.json`: YouTube's API response for the Live tab of a channel that
+  is live, with its header
+- `channel-header.json`: the header of YouTube's API response for a subscribed
+  channel's Videos tab, of a channel that isn't live
 
 Each keeps only a few items of each kind: regular videos, a collaboration, a
 playlist, a shelf and the token for the next page (Watch later has one only

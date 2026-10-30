@@ -11,6 +11,8 @@ import { MAX_VIDEOS_PER_CHANNEL } from './videosPerChannel';
 export interface Feed {
   fetchedAt: number;
   videos: Video[];
+  /** Whether the channel was streaming live when the feed was fetched */
+  isLive: boolean;
 }
 
 export type Feeds = Partial<Record<string, Feed>>;
@@ -30,7 +32,7 @@ const subscriptionsItem = storage.defineItem<Channel[]>('local:subscriptions', {
 });
 const feedsItem = storage.defineItem<Feeds>('local:feeds', {
   fallback: {},
-  version: 7,
+  version: 8,
   migrations: {
     // Version 2 adds view counts: load all feeds again rather than show
     // videos without them until each feed gets old enough to be refreshed.
@@ -48,6 +50,9 @@ const feedsItem = storage.defineItem<Feeds>('local:feeds', {
     // Version 7 keeps 5 videos per channel rather than 3, of which the
     // page shows as many as chosen.
     7: () => ({}),
+    // Version 8 adds whether each channel is live, which Live relies on to
+    // find all streams.
+    8: () => ({}),
   },
 });
 
@@ -60,11 +65,21 @@ let state: SubscriptionsState = {
   isRefreshing: false,
 };
 const listeners = new Set<() => void>();
-let loaded: Promise<void> | undefined;
+let cached: Promise<void> | undefined;
 
 export function useSubscriptions(): SubscriptionsState {
-  loaded ??= load();
+  void loadSubscriptions();
   return useSyncExternalStore(subscribe, () => state);
+}
+
+/**
+ * The subscriptions and feeds as they are once those stored earlier are
+ * loaded, which also starts bringing them up to date.
+ */
+export async function loadSubscriptions(): Promise<SubscriptionsState> {
+  cached ??= load();
+  await cached;
+  return state;
 }
 
 function subscribe(onChange: () => void) {
@@ -88,7 +103,7 @@ async function load() {
     feedsItem.getValue(),
   ]);
   update({ channels, feeds });
-  await refresh(false);
+  void refresh(false);
 }
 
 /**
@@ -145,8 +160,8 @@ async function reload(options: { subscriptions: boolean; force: boolean }) {
     let failed = 0;
     await forEachConcurrently(stale, CONCURRENT_REQUESTS, async (channel) => {
       try {
-        const videos = await fetchLatestVideos(channel.id, MAX_VIDEOS_PER_CHANNEL);
-        feeds[channel.id] = { fetchedAt: Date.now(), videos };
+        const latest = await fetchLatestVideos(channel.id, MAX_VIDEOS_PER_CHANNEL);
+        feeds[channel.id] = { fetchedAt: Date.now(), ...latest };
       } catch (err) {
         failed++;
         console.warn(channel.title, err);
@@ -182,8 +197,8 @@ function staleChannels(force: boolean) {
  */
 export async function refreshChannel(channelId: string) {
   try {
-    const videos = await fetchLatestVideos(channelId, MAX_VIDEOS_PER_CHANNEL);
-    const feeds = { ...state.feeds, [channelId]: { fetchedAt: Date.now(), videos } };
+    const latest = await fetchLatestVideos(channelId, MAX_VIDEOS_PER_CHANNEL);
+    const feeds = { ...state.feeds, [channelId]: { fetchedAt: Date.now(), ...latest } };
     await feedsItem.setValue(feeds);
     update({ feeds });
   } catch (err) {

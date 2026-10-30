@@ -26,7 +26,7 @@ import type { Channel, Video } from '@/utils/youtube';
 import { PlayableLink } from '../player';
 import { foldForSearch, useSearchShortcut } from '../search';
 import { saveToWatchLater } from '../watch-later/store';
-import { useGroupFilter, useGroups } from './groups';
+import { useChannelFilter, useGroups } from './groups';
 import { AddToGroupButton, GroupTokens, GroupsNav } from './GroupControls';
 import {
   type Feed,
@@ -46,12 +46,8 @@ import {
 export function SubscriptionsPage() {
   const { channels, feeds, status, isRefreshing } = useSubscriptions();
   const videosPerChannel = useVideosPerChannel();
-  const { groups, isLoaded: groupsLoaded } = useGroups();
-  const storedFilter = useGroupFilter();
-  // A group deleted meanwhile, e.g. in another tab, leaves all channels shown.
-  const filterGroup = groups.find((g) => g.id === storedFilter);
-  const filter =
-    storedFilter === 'ungrouped' || filterGroup || !groupsLoaded ? storedFilter : 'all';
+  const { isLoaded: groupsLoaded } = useGroups();
+  const { filter, group: filterGroup, includes } = useChannelFilter();
   const [sort, setSort] = useState<Sort>('newest');
   const [query, setQuery] = useState('');
   const deferredQuery = useDeferredValue(foldForSearch(query.trim()));
@@ -72,16 +68,6 @@ export function SubscriptionsPage() {
     };
   }, []);
 
-  const inFilter = useMemo(() => {
-    if (filter === 'all') return () => true;
-    if (filter === 'ungrouped') {
-      const grouped = new Set(groups.flatMap((g) => g.channelIds));
-      return (c: Channel) => !grouped.has(c.id);
-    }
-    const ids = new Set(groups.find((g) => g.id === filter)?.channelIds);
-    return (c: Channel) => ids.has(c.id);
-  }, [filter, groups]);
-
   const visible = useMemo(() => {
     const keys = new Map(channels.map((c) => [c.id, recency(feeds[c.id])]));
     const direction = sort === 'oldest' ? -1 : 1;
@@ -95,9 +81,9 @@ export function SubscriptionsPage() {
         return direction * compareRecency(keys.get(a.id)!, keys.get(b.id)!);
       })
       .filter(
-        (c) => inFilter(c) && matchesQuery(c, feeds[c.id], videosPerChannel, deferredQuery),
+        (c) => includes(c.id) && matchesQuery(c, feeds[c.id], videosPerChannel, deferredQuery),
       );
-  }, [channels, feeds, sort, videosPerChannel, deferredQuery, inFilter]);
+  }, [channels, feeds, sort, videosPerChannel, deferredQuery, includes]);
 
   // Only the first channels render, and more as the end of the list scrolls
   // into view: hundreds of them at once make the page slow to show. A new

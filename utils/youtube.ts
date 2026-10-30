@@ -31,7 +31,7 @@ export interface ListedVideo {
   /** Badge on the thumbnail, e.g. "21:52" or "LIVE" */
   duration?: string;
   /** Collaborations list several channels in `title` but link the first */
-  channel?: { title: string; url?: string; avatar?: string };
+  channel?: { id?: string; title: string; url?: string; avatar?: string };
   /** What YouTube lists after the channel name, e.g. view count and age */
   details: MetadataPart[];
   /** How much of the video the user has watched, in percent */
@@ -129,30 +129,114 @@ export function parseSubscriptionsPage(html: string): Channel[] {
 
 /** What YouTube's own link to a channel's Videos tab sends along */
 const VIDEOS_TAB_PARAMS = 'EgZ2aWRlb3PyBgQKAjoA';
-const VIDEOS_ATTEMPTS = 4;
+/** What YouTube's own link to a channel's Live tab sends along */
+const LIVE_TAB_PARAMS = 'EgdzdHJlYW1z8gYECgJ6AA==';
+const BROWSE_ATTEMPTS = 4;
 
-/** A channel's latest long-form uploads (no Shorts or streams), newest first. */
+export interface ChannelVideos {
+  /** The latest long-form uploads (no Shorts or streams), newest first */
+  videos: Video[];
+  /** Whether the channel is streaming live right now */
+  isLive: boolean;
+}
+
+/** A channel's latest long-form uploads, and whether it's live. */
 export async function fetchLatestVideos(
   channelId: string,
   limit: number,
-): Promise<Video[]> {
+): Promise<ChannelVideos> {
+  // In English, whatever the user's language, so that the ages can be read.
+  const data = await browseChannel(channelId, VIDEOS_TAB_PARAMS, { language: 'en' });
+  return {
+    videos: parseChannelVideos(data, Date.now()).slice(0, limit),
+    isLive: parseChannelIsLive(data),
+  };
+}
+
+/** The live streams on a channel's Live tab that are on right now. */
+export async function fetchLiveStreams(channel: Channel): Promise<ListedVideo[]> {
+  return parseLiveStreams(await browseChannel(channel.id, LIVE_TAB_PARAMS), channel);
+}
+
+/** One of a channel's tabs, as YouTube's API describes it */
+async function browseChannel(
+  channelId: string,
+  params: string,
+  options?: RequestOptions,
+): Promise<unknown> {
   for (let attempt = 1; ; attempt++) {
-    // In English, whatever the user's language, so that the ages can be read.
     const { status, data } = await innertubeRequest(
       'browse',
-      { browseId: channelId, params: VIDEOS_TAB_PARAMS },
-      { language: 'en' },
+      { browseId: channelId, params },
+      options,
     );
-    if (status === 200) return parseChannelVideos(data, Date.now()).slice(0, limit);
+    if (status === 200) return data;
     // YouTube turns some requests away (429, or 500 now and then) when many
     // come at once, like while loading all subscriptions: try those again a
     // little later, waiting longer each time.
-    if ((status !== 429 && status < 500) || attempt === VIDEOS_ATTEMPTS) {
+    if ((status !== 429 && status < 500) || attempt === BROWSE_ATTEMPTS) {
       throw new Error(`Loading videos failed (${status})`);
     }
     const delay = 1000 * 2 ** attempt * (0.5 + Math.random());
     await new Promise((resolve) => setTimeout(resolve, delay));
   }
+}
+
+/**
+ * Whether the channel in YouTube's API response for one of its tabs is live:
+ * the avatar in the page header then has a LIVE badge.
+ */
+export function parseChannelIsLive(data: unknown): boolean {
+  return findAll((data as { header?: unknown } | null)?.header, 'liveData').length > 0;
+}
+
+/**
+ * The streams on now in YouTube's API response for a channel's Live tab,
+ * which also lists past and upcoming ones. A channel without a Live tab gets
+ * its Home tab, which has no grid of videos.
+ */
+export function parseLiveStreams(data: unknown, channel: Channel): ListedVideo[] {
+  const items = findAll(data, 'richGridRenderer')[0]?.contents;
+  return (Array.isArray(items) ? items : [])
+    .map((item) => item.richItemRenderer?.content?.lockupViewModel)
+    .filter((lockup) => lockup?.contentType === 'LOCKUP_CONTENT_TYPE_VIDEO' && isLiveNow(lockup))
+    .map((lockup) =>
+      parseLockup(lockup, {
+        id: channel.id,
+        title: channel.title,
+        url: `${ORIGIN}/channel/${channel.id}`,
+        avatar: channel.avatar,
+      }),
+    )
+    .filter((video) => video !== undefined);
+}
+
+/**
+ * The live streams at the top of the logged-in user's subscriptions feed. It
+ * lists those that started lately, but not all that are on.
+ */
+export async function fetchSubscriptionsFeedLiveStreams(): Promise<ListedVideo[]> {
+  const { status, data } = await innertubeRequest('browse', { browseId: 'FEsubscriptions' });
+  if (status !== 200) throw new Error(`Loading live streams failed (${status})`);
+  return parseSubscriptionsFeedLiveStreams(data);
+}
+
+/** The streams on now in YouTube's API response for the subscriptions feed. */
+export function parseSubscriptionsFeedLiveStreams(data: unknown): ListedVideo[] {
+  // Only top-level grid items: the "Most relevant" shelf repeats some.
+  const items = findAll(data, 'richGridRenderer')[0]?.contents;
+  return (Array.isArray(items) ? items : [])
+    .map((item) => item.richItemRenderer?.content?.lockupViewModel)
+    .filter((lockup) => lockup?.contentType === 'LOCKUP_CONTENT_TYPE_VIDEO' && isLiveNow(lockup))
+    .map((lockup) => parseLockup(lockup))
+    .filter((video) => video !== undefined);
+}
+
+/** Whether the lockup has the red LIVE badge, told apart by style as its text is translated */
+function isLiveNow(lockup: any): boolean {
+  return findAll(lockup.contentImage, 'thumbnailBadgeViewModel').some(
+    (badge) => badge.badgeStyle === 'THUMBNAIL_OVERLAY_BADGE_STYLE_LIVE',
+  );
 }
 
 /**
@@ -287,18 +371,26 @@ function parseFeedItems(items: unknown): VideoListPage {
     .map((item) => item.richItemRenderer?.content?.lockupViewModel)
     .filter((lockup) => lockup?.contentType === 'LOCKUP_CONTENT_TYPE_VIDEO');
   return {
-    videos: lockups.map(parseLockup).filter((video) => video !== undefined),
+    videos: lockups.map((lockup) => parseLockup(lockup)).filter((video) => video !== undefined),
     continuation: findAll(items, 'continuationCommand').at(-1)?.token,
   };
 }
 
-function parseLockup(lockup: any): ListedVideo | undefined {
+/**
+ * A video as YouTube lists it. Lists of one channel's videos leave the
+ * channel out, which `channel` then gives.
+ */
+function parseLockup(lockup: any, channel?: ListedVideo['channel']): ListedVideo | undefined {
   const metadata = lockup.metadata?.lockupMetadataViewModel;
   if (!lockup.contentId || !metadata) return undefined;
 
   const parts: any[] = findAll(metadata.metadata, 'metadataParts').flat();
-  const browse = findAll(metadata.image, 'browseEndpoint')[0];
-  const channelTitle = parts[0]?.text?.content;
+  const channelTitle = channel ? undefined : parts[0]?.text?.content;
+  // The avatar links to the channel, except on live streams, where it links
+  // to the stream and only the channel's name links to the channel.
+  const browse =
+    findAll(metadata.image, 'browseEndpoint')[0] ??
+    (channelTitle && findAll(parts[0], 'browseEndpoint')[0]);
   return {
     id: lockup.contentId,
     title: metadata.title?.content ?? '',
@@ -308,11 +400,12 @@ function parseLockup(lockup: any): ListedVideo | undefined {
     duration: findAll(lockup.contentImage, 'thumbnailBadgeViewModel')[0]?.text,
     progress: findAll(lockup.contentImage, 'thumbnailOverlayProgressBarViewModel')[0]
       ?.startPercent,
-    channel: channelTitle && {
+    channel: channel ?? (channelTitle && {
+      id: browse?.browseId,
       title: channelTitle,
       url: channelUrl(browse),
       avatar: absoluteUrl(findAll(metadata.image, 'avatarViewModel')[0]?.image?.sources?.[0]?.url),
-    },
+    }),
     details: parts
       .slice(channelTitle ? 1 : 0)
       .filter((part) => part.text?.content)

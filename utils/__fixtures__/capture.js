@@ -2,8 +2,9 @@
 // See README.md in this folder for how to use it.
 //
 // Keeps a few items of each kind from the Home page, the next page of Home,
-// the subscriptions page, a subscribed channel's Videos tab, Watch later and
-// History (and its next part), then replaces titles, names, IDs,
+// the subscriptions page, a subscribed channel's Videos tab, Watch later,
+// History (and its next part), the subscriptions feed and a live channel's
+// Live tab, then replaces titles, names, IDs,
 // URLs and tokens with placeholders and scrambles the digits of counts, ages
 // and durations. Clipboard writes need a click, so it adds a button for that.
 
@@ -47,8 +48,8 @@ const SAFE = [
 const NUMERIC = [
   /^\d+(:\d\d)+$/,
   /^[\d.,]+[KMB]?$/,
-  /^[\d.,]+[KMB]?\s*(thousand|million|billion)?\s*views?$/i,
-  /^\d+\s*(s|m|min|h|d|w|mo|y)\s+ago$/i,
+  /^[\d.,]+[KMB]?\s*(thousand|million|billion)?\s*(views?|watching)$/i,
+  /^(Streamed\s+)?\d+\s*(s|m|min|h|d|w|mo|y)\s+ago$/i,
   /^(Streamed\s+)?\d+\s+(second|minute|hour|day|week|month|year)s?\s+ago$/i,
 ];
 const randomInt = (min, max) => min + Math.floor(Math.random() * (max - min + 1));
@@ -290,6 +291,60 @@ async function capture() {
     }),
   };
 
+  // The subscriptions feed: a few of the live streams at its top, a few other
+  // videos and its shelves, of which the parser reads none.
+  const isLive = (item) =>
+    findAll(item, 'thumbnailBadgeViewModel').some(
+      (badge) => badge.badgeStyle === 'THUMBNAIL_OVERLAY_BADGE_STYLE_LIVE',
+    );
+  const subsFeedData = await innertubeRequest('browse', { browseId: 'FEsubscriptions' });
+  const subsFeedItems = findAll(subsFeedData, 'richGridRenderer')[0].contents;
+  const liveItems = subsFeedItems.filter((i) => i.richItemRenderer && isLive(i));
+  const feedPicks = new Set([
+    ...liveItems.slice(0, 3),
+    ...subsFeedItems.filter((i) => i.richItemRenderer && !isLive(i)).slice(0, 2),
+  ]);
+  const subscriptionsFeed = {
+    contents: {
+      richGridRenderer: {
+        contents: subsFeedItems
+          .filter((i) => feedPicks.has(i) || i.richSectionRenderer)
+          .map((i) =>
+            i.richSectionRenderer
+              ? JSON.parse(JSON.stringify(i, (k, v) => (k === 'contents' && Array.isArray(v) ? v.slice(0, 2) : v)))
+              : i,
+          ),
+      },
+    },
+  };
+
+  // The Live tab of the first channel live in the feed: its header, whose
+  // avatar says it's live, its streams on now and a few past ones.
+  const liveChannelId = findAll(liveItems[0], 'browseEndpoint')[0].browseId;
+  const liveTabData = await innertubeRequest('browse', { browseId: liveChannelId, params: 'EgdzdHJlYW1z8gYECgJ6AA==' });
+  const liveGrid = findAll(liveTabData, 'richGridRenderer')[0].contents;
+  const channelLive = {
+    header: liveTabData.header,
+    contents: {
+      richGridRenderer: {
+        contents: [
+          ...liveGrid.filter((i) => i.richItemRenderer && isLive(i)),
+          ...liveGrid.filter((i) => i.richItemRenderer && !isLive(i)).slice(0, 2),
+        ],
+      },
+    },
+  };
+
+  // The header of a subscribed channel that isn't live, from its Videos tab.
+  let channelHeader;
+  for (const { channelId } of findAll(subsData, 'channelRenderer')) {
+    const data = await innertubeRequest('browse', { browseId: channelId, params: 'EgZ2aWRlb3PyBgQKAjoA' });
+    if (findAll(data.header, 'liveData').length === 0) {
+      channelHeader = { header: data.header };
+      break;
+    }
+  }
+
   return anonymize({
     home,
     homeContinuation,
@@ -298,6 +353,9 @@ async function capture() {
     watchLater,
     history,
     historyContinuation,
+    subscriptionsFeed,
+    channelLive,
+    channelHeader,
   });
 }
 
