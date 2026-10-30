@@ -14,6 +14,8 @@ It has these tabs:
   videos (no Shorts) and an unsubscribe button. Sort channels into colored groups
   and filter by group in the sidebar; groups can be exported to a file and imported
   again.
+- **Live**: the live streams of your subscriptions, updated every minute, filtered
+  by the same groups as Subs.
 - **Feed**: YouTube's Home recommendations, without Shorts or shelves. **Not
   interested** and **Don't recommend channel** work as on YouTube.
 - **Watch later**: your Watch later playlist.

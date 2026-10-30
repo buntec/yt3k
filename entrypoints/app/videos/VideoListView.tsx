@@ -33,6 +33,8 @@ export interface VideoAction {
 /**
  * A page with a grid of videos from YouTube. `actions` gives each video's
  * menu; define it outside components, so cards don't re-render needlessly.
+ * `start` is a side panel, and `include` with `filteredEmpty` a filter it
+ * sets, such as Live's groups.
  */
 export function VideoListView({
   title,
@@ -40,14 +42,21 @@ export function VideoListView({
   loadingText,
   empty,
   actions,
+  start,
+  include,
+  filteredEmpty,
 }: {
   title: string;
   list: VideoList;
   loadingText: string;
   empty: { title: string; description?: string };
   actions: (video: ListedVideo) => VideoAction[];
+  start?: React.ReactNode;
+  include?: (video: ListedVideo) => boolean;
+  filteredEmpty?: { title: string; description?: string };
 }) {
-  const { videos, continuation, loading, error, removalError, removals } = list.use();
+  const { videos: loaded, continuation, loading, error, removalError, removals } = list.use();
+  const videos = include ? loaded.filter(include) : loaded;
   const columns = useColumns();
   const status = loading === 'refresh' ? loadingText : (error ?? removalError);
   const [query, setQuery] = useState('');
@@ -64,8 +73,12 @@ export function VideoListView({
   );
 
   return (
+    // With a side panel, no contentWidth, as on Subs: Layout would align the
+    // panel to the centered frame, leaving a gap at the window's edge. The
+    // videos are capped instead.
     <Layout
-      contentWidth={1600}
+      contentWidth={start ? undefined : 1600}
+      start={start}
       header={
         <LayoutHeader hasDivider padding={6}>
           <HStack gap={4} vAlign="center" wrap="wrap">
@@ -108,11 +121,19 @@ export function VideoListView({
         <LayoutContent padding={6}>
           {videos.length === 0 ? (
             loading === 'idle' &&
-            !error && (
+            !error &&
+            (loaded.length > 0 && filteredEmpty ? (
+              <EmptyState
+                title={filteredEmpty.title}
+                description={filteredEmpty.description}
+                headingLevel={2}
+                isCompact
+              />
+            ) : (
               <EmptyState title={empty.title} description={empty.description} headingLevel={2} />
-            )
+            ))
           ) : (
-            <VStack gap={8}>
+            <VStack gap={8} maxWidth={start ? 1600 : undefined}>
               {deferredQuery && matching.length === 0 && (
                 <EmptyState
                   title="No matching videos"

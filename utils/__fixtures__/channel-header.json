@@ -1,0 +1,794 @@
+{
+ "header": {
+  "pageHeaderRenderer": {
+   "pageTitle": "Text 110",
+   "content": {
+    "pageHeaderViewModel": {
+     "title": {
+      "dynamicTextViewModel": {
+       "text": {
+        "content": "Text 110"
+       },
+       "maxLines": 2,
+       "rendererContext": {}
+      }
+     },
+     "image": {
+      "decoratedAvatarViewModel": {
+       "avatar": {
+        "avatarViewModel": {
+         "image": {
+          "sources": [
+           {
+            "url": "https://yt3.ggpht.com/image-33",
+            "width": 72,
+            "height": 72
+           },
+           {
+            "url": "https://yt3.ggpht.com/image-34",
+            "width": 120,
+            "height": 120
+           },
+           {
+            "url": "https://yt3.ggpht.com/image-35",
+            "width": 160,
+            "height": 160
+           }
+          ],
+          "processor": {
+           "borderImageProcessor": {
+            "circular": true
+           }
+          }
+         },
+         "avatarImageSize": "AVATAR_SIZE_XL"
+        }
+       }
+      }
+     },
+     "metadata": {
+      "contentMetadataViewModel": {
+       "metadataRows": [
+        {
+         "metadataParts": [
+          {
+           "text": {
+            "content": "Text 111",
+            "styleRuns": [
+             {
+              "weightLabel": "FONT_WEIGHT_MEDIUM",
+              "styleRunExtensions": {
+               "styleRunColorMapExtension": {
+                "colorMap": [
+                 {
+                  "key": "USER_INTERFACE_THEME_LIGHT",
+                  "value": 4279440147
+                 },
+                 {
+                  "key": "USER_INTERFACE_THEME_DARK",
+                  "value": 4294967295
+                 }
+                ]
+               }
+              }
+             }
+            ]
+           },
+           "enableTruncation": true
+          }
+         ]
+        },
+        {
+         "metadataParts": [
+          {
+           "text": {
+            "content": "Text 112"
+           },
+           "accessibilityLabel": "Text 113"
+          },
+          {
+           "text": {
+            "content": "Text 114",
+            "styleRuns": [
+             {
+              "startIndex": 0,
+              "length": 10
+             }
+            ]
+           }
+          }
+         ]
+        }
+       ],
+       "delimiter": "•",
+       "rendererContext": {}
+      }
+     },
+     "actions": {
+      "flexibleActionsViewModel": {
+       "actionsRows": [
+        {
+         "actions": [
+          {
+           "subscribeButtonViewModel": {
+            "subscribeButtonContent": {
+             "buttonText": "Text 78",
+             "accessibilityText": "Text 115",
+             "imageName": "Text 80",
+             "subscribeState": {
+              "key": "token-62",
+              "subscribed": false
+             },
+             "onTapCommand": {
+              "innertubeCommand": {
+               "commandMetadata": {},
+               "subscribeEndpoint": {
+                "channelIds": [
+                 "UCchannel000000000000009"
+                ],
+                "params": "Text 81"
+               }
+              }
+             }
+            },
+            "unsubscribeButtonContent": {
+             "buttonText": "Text 82",
+             "accessibilityText": "Text 116",
+             "imageName": "Text 80",
+             "subscribeState": {
+              "key": "token-62",
+              "subscribed": true
+             },
+             "onTapCommand": {
+              "innertubeCommand": {
+               "commandMetadata": {},
+               "signalServiceEndpoint": {
+                "signal": "CLIENT_SIGNAL",
+                "actions": [
+                 {
+                  "openPopupAction": {
+                   "popup": {
+                    "confirmDialogRenderer": {
+                     "dialogMessages": [
+                      {
+                       "runs": [
+                        {
+                         "text": "Text 84"
+                        },
+                        {
+                         "text": "Text 110"
+                        },
+                        {
+                         "text": "Text 85"
+                        }
+                       ]
+                      }
+                     ],
+                     "confirmButton": {
+                      "buttonRenderer": {
+                       "style": "STYLE_BLUE_TEXT",
+                       "size": "SIZE_DEFAULT",
+                       "isDisabled": false,
+                       "text": {
+                        "runs": [
+                         {
+                          "text": "Text 86"
+                         }
+                        ]
+                       },
+                       "serviceEndpoint": {
+                        "commandMetadata": {},
+                        "unsubscribeEndpoint": {
+                         "channelIds": [
+                          "UCchannel000000000000009"
+                         ],
+                         "params": "Text 87"
+                        }
+                       },
+                       "accessibility": {
+                        "label": "Text 86"
+                       }
+                      }
+                     },
+                     "cancelButton": {
+                      "buttonRenderer": {
+                       "style": "STYLE_TEXT",
+                       "size": "SIZE_DEFAULT",
+                       "isDisabled": false,
+                       "text": {
+                        "runs": [
+                         {
+                          "text": "Text 88"
+                         }
+                        ]
+                       },
+                       "accessibility": {
+                        "label": "Text 88"
+                       }
+                      }
+                     },
+                     "primaryIsCancel": false
+                    }
+                   },
+                   "popupType": "DIALOG"
+                  }
+                 }
+                ]
+               }
+              }
+             }
+            },
+            "stateEntityStoreKey": "token-62",
+            "disableNotificationBell": false,
+            "buttonStyle": {
+             "unsubscribedStateStyle": "SUBSCRIBE_BUTTON_VIEW_MODEL_UNSUBSCRIBED_STATE_STYLE_PILL",
+             "subscribedStateStyle": "SUBSCRIBE_BUTTON_VIEW_MODEL_SUBSCRIBED_STATE_STYLE_DROPDOWN",
+             "buttonSize": "SUBSCRIBE_BUTTON_VIEW_MODEL_SIZE_MEDIUM",
+             "subscribeButtonAnimationStyle": "SUBSCRIBE_BUTTON_VIEW_MODEL_ANIMATION_STYLE_CAIRO"
+            },
+            "backgroundStyle": "SUBSCRIBE_BUTTON_VIEW_MODEL_BACKGROUND_STYLE_UNKNOWN",
+            "disableSubscribeButton": false,
+            "onShowSubscriptionOptions": {
+             "innertubeCommand": {
+              "showSheetCommand": {
+               "panelLoadingStrategy": {
+                "inlineContent": {
+                 "sheetViewModel": {
+                  "content": {
+                   "listViewModel": {
+                    "listItems": [
+                     {
+                      "listItemViewModel": {
+                       "title": {
+                        "content": "Text 89"
+                       },
+                       "leadingImage": {
+                        "sources": [
+                         {
+                          "clientResource": {
+                           "imageName": "NOTIFICATIONS_ACTIVE"
+                          }
+                         }
+                        ]
+                       },
+                       "isDisabled": false,
+                       "isSelected": false,
+                       "selectionStyle": "LIST_ITEM_SELECTION_STYLE_DEFAULT",
+                       "rendererContext": {
+                        "commandContext": {
+                         "onTap": {
+                          "innertubeCommand": {
+                           "commandMetadata": {},
+                           "modifyChannelNotificationPreferenceEndpoint": {
+                            "params": "token-63"
+                           }
+                          }
+                         }
+                        }
+                       }
+                      }
+                     },
+                     {
+                      "listItemViewModel": {
+                       "title": {
+                        "content": "Text 90"
+                       },
+                       "leadingImage": {
+                        "sources": [
+                         {
+                          "clientResource": {
+                           "imageName": "NOTIFICATIONS_NONE"
+                          }
+                         }
+                        ]
+                       },
+                       "isDisabled": false,
+                       "isSelected": true,
+                       "selectionStyle": "LIST_ITEM_SELECTION_STYLE_DEFAULT",
+                       "rendererContext": {
+                        "commandContext": {
+                         "onTap": {
+                          "innertubeCommand": {
+                           "commandMetadata": {},
+                           "modifyChannelNotificationPreferenceEndpoint": {
+                            "params": "token-64"
+                           }
+                          }
+                         }
+                        }
+                       }
+                      }
+                     },
+                     {
+                      "listItemViewModel": {
+                       "title": {
+                        "content": "Text 91"
+                       },
+                       "leadingImage": {
+                        "sources": [
+                         {
+                          "clientResource": {
+                           "imageName": "NOTIFICATIONS_OFF"
+                          }
+                         }
+                        ]
+                       },
+                       "isDisabled": false,
+                       "isSelected": false,
+                       "selectionStyle": "LIST_ITEM_SELECTION_STYLE_DEFAULT",
+                       "rendererContext": {
+                        "commandContext": {
+                         "onTap": {
+                          "innertubeCommand": {
+                           "commandMetadata": {},
+                           "modifyChannelNotificationPreferenceEndpoint": {
+                            "params": "token-65"
+                           }
+                          }
+                         }
+                        }
+                       }
+                      }
+                     },
+                     {
+                      "listItemViewModel": {
+                       "title": {
+                        "content": "Text 86"
+                       },
+                       "leadingImage": {
+                        "sources": [
+                         {
+                          "clientResource": {
+                           "imageName": "PERSON_MINUS"
+                          }
+                         }
+                        ]
+                       },
+                       "isDisabled": false,
+                       "rendererContext": {
+                        "commandContext": {
+                         "onTap": {
+                          "innertubeCommand": {
+                           "commandMetadata": {},
+                           "signalServiceEndpoint": {
+                            "signal": "CLIENT_SIGNAL",
+                            "actions": [
+                             {
+                              "openPopupAction": {
+                               "popup": {
+                                "confirmDialogRenderer": {
+                                 "dialogMessages": [
+                                  {
+                                   "runs": [
+                                    {
+                                     "text": "Text 84"
+                                    },
+                                    {
+                                     "text": "Text 110"
+                                    },
+                                    {
+                                     "text": "Text 85"
+                                    }
+                                   ]
+                                  }
+                                 ],
+                                 "confirmButton": {
+                                  "buttonRenderer": {
+                                   "style": "STYLE_BLUE_TEXT",
+                                   "size": "SIZE_DEFAULT",
+                                   "isDisabled": false,
+                                   "text": {
+                                    "runs": [
+                                     {
+                                      "text": "Text 86"
+                                     }
+                                    ]
+                                   },
+                                   "serviceEndpoint": {
+                                    "commandMetadata": {},
+                                    "unsubscribeEndpoint": {
+                                     "channelIds": [
+                                      "UCchannel000000000000009"
+                                     ],
+                                     "params": "Text 87"
+                                    }
+                                   },
+                                   "accessibility": {
+                                    "label": "Text 86"
+                                   }
+                                  }
+                                 },
+                                 "cancelButton": {
+                                  "buttonRenderer": {
+                                   "style": "STYLE_TEXT",
+                                   "size": "SIZE_DEFAULT",
+                                   "isDisabled": false,
+                                   "text": {
+                                    "runs": [
+                                     {
+                                      "text": "Text 88"
+                                     }
+                                    ]
+                                   },
+                                   "accessibility": {
+                                    "label": "Text 88"
+                                   }
+                                  }
+                                 },
+                                 "primaryIsCancel": false
+                                }
+                               },
+                               "popupType": "DIALOG"
+                              }
+                             }
+                            ]
+                           }
+                          }
+                         }
+                        }
+                       }
+                      }
+                     }
+                    ]
+                   }
+                  }
+                 }
+                }
+               }
+              }
+             }
+            },
+            "channelId": "UCchannel000000000000009",
+            "enableSubscribeButtonPostClickAnimation": true,
+            "notificationStateEntityStoreKeys": {
+             "subsNotificationStateKey": "token-66"
+            },
+            "bellAccessibilityData": {
+             "offLabel": "Text 117",
+             "allLabel": "Text 118",
+             "occasionalLabel": "Text 119",
+             "disabledLabel": "Text 95"
+            }
+           }
+          }
+         ]
+        }
+       ],
+       "justifyContent": "FLEXIBLE_ACTIONS_JUSTIFY_CONTENT_START",
+       "minimumRowHeight": 44,
+       "rendererContext": {}
+      }
+     },
+     "description": {
+      "descriptionPreviewViewModel": {
+       "description": {
+        "content": "Text 120"
+       },
+       "maxLines": 2,
+       "truncationText": {
+        "content": "Text 97",
+        "styleRuns": [
+         {
+          "startIndex": 0,
+          "length": 7,
+          "weight": 500
+         }
+        ]
+       },
+       "alwaysShowTruncationText": true,
+       "rendererContext": {
+        "commandContext": {
+         "onTap": {
+          "innertubeCommand": {
+           "showEngagementPanelEndpoint": {
+            "engagementPanel": {
+             "engagementPanelSectionListRenderer": {
+              "header": {
+               "engagementPanelTitleHeaderRenderer": {
+                "title": {
+                 "simpleText": "Text 110"
+                },
+                "visibilityButton": {
+                 "buttonRenderer": {
+                  "style": "STYLE_DEFAULT",
+                  "size": "SIZE_DEFAULT",
+                  "isDisabled": false,
+                  "icon": {
+                   "iconType": "CLOSE"
+                  },
+                  "accessibility": {
+                   "label": "Text 98"
+                  },
+                  "accessibilityData": {
+                   "accessibilityData": {
+                    "label": "Text 98"
+                   }
+                  },
+                  "command": {
+                   "changeEngagementPanelVisibilityAction": {
+                    "targetId": "token-67",
+                    "visibility": "ENGAGEMENT_PANEL_VISIBILITY_HIDDEN"
+                   }
+                  }
+                 }
+                }
+               }
+              },
+              "content": {
+               "sectionListRenderer": {
+                "contents": [
+                 {
+                  "itemSectionRenderer": {
+                   "contents": [
+                    {
+                     "continuationItemRenderer": {
+                      "trigger": "CONTINUATION_TRIGGER_ON_ITEM_SHOWN",
+                      "continuationEndpoint": {
+                       "commandMetadata": {},
+                       "continuationCommand": {
+                        "token": "token-68",
+                        "request": "CONTINUATION_REQUEST_TYPE_BROWSE"
+                       }
+                      }
+                     }
+                    }
+                   ],
+                   "sectionIdentifier": "token-69",
+                   "targetId": "token-69"
+                  }
+                 }
+                ],
+                "scrollPaneStyle": {
+                 "scrollable": true
+                }
+               }
+              },
+              "targetId": "token-67",
+              "identifier": {
+               "surface": "ENGAGEMENT_PANEL_SURFACE_BROWSE",
+               "tag": "token-67"
+              }
+             }
+            },
+            "identifier": {
+             "surface": "ENGAGEMENT_PANEL_SURFACE_BROWSE",
+             "tag": "token-67"
+            },
+            "engagementPanelPresentationConfigs": {
+             "engagementPanelPopupPresentationConfig": {
+              "popupType": "PANEL_POPUP_TYPE_DIALOG"
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "attribution": {
+      "attributionViewModel": {
+       "text": {
+        "content": "Text 121",
+        "commandRuns": [
+         {
+          "startIndex": 0,
+          "length": 16,
+          "onTap": {
+           "innertubeCommand": {
+            "commandMetadata": {},
+            "urlEndpoint": {
+             "url": "https://yt3.ggpht.com/image-36",
+             "target": "TARGET_NEW_WINDOW"
+            }
+           }
+          }
+         }
+        ],
+        "styleRuns": [
+         {
+          "weightLabel": "FONT_WEIGHT_NORMAL",
+          "styleRunExtensions": {
+           "styleRunColorMapExtension": {
+            "colorMap": [
+             {
+              "key": "USER_INTERFACE_THEME_DARK",
+              "value": 4282296063
+             },
+             {
+              "key": "USER_INTERFACE_THEME_LIGHT",
+              "value": 4278607828
+             }
+            ]
+           }
+          }
+         }
+        ],
+        "attachmentRuns": [
+         {
+          "startIndex": 0,
+          "length": 0,
+          "element": {
+           "type": {
+            "imageType": {
+             "image": {
+              "sources": [
+               {
+                "customImageSource": {
+                 "youtubeIconSource": {
+                  "clientResource": {
+                   "icon": "YTICON_OUTLINE_LINK_S24"
+                  }
+                 }
+                }
+               }
+              ]
+             }
+            }
+           },
+           "properties": {
+            "layoutProperties": {
+             "height": {
+              "value": 14,
+              "unit": "DIMENSION_UNIT_POINT"
+             },
+             "width": {
+              "value": 14,
+              "unit": "DIMENSION_UNIT_POINT"
+             }
+            }
+           }
+          },
+          "alignment": "ALIGNMENT_VERTICAL_CENTER"
+         }
+        ]
+       },
+       "suffix": {
+        "content": "Text 122",
+        "commandRuns": [
+         {
+          "startIndex": 0,
+          "length": 16,
+          "onTap": {
+           "innertubeCommand": {
+            "showEngagementPanelEndpoint": {
+             "engagementPanel": {
+              "engagementPanelSectionListRenderer": {
+               "header": {
+                "engagementPanelTitleHeaderRenderer": {
+                 "title": {
+                  "simpleText": "Text 110"
+                 },
+                 "visibilityButton": {
+                  "buttonRenderer": {
+                   "style": "STYLE_DEFAULT",
+                   "size": "SIZE_DEFAULT",
+                   "isDisabled": false,
+                   "icon": {
+                    "iconType": "CLOSE"
+                   },
+                   "accessibility": {
+                    "label": "Text 98"
+                   },
+                   "accessibilityData": {
+                    "accessibilityData": {
+                     "label": "Text 98"
+                    }
+                   },
+                   "command": {
+                    "changeEngagementPanelVisibilityAction": {
+                     "targetId": "token-70",
+                     "visibility": "ENGAGEMENT_PANEL_VISIBILITY_HIDDEN"
+                    }
+                   }
+                  }
+                 }
+                }
+               },
+               "content": {
+                "sectionListRenderer": {
+                 "contents": [
+                  {
+                   "itemSectionRenderer": {
+                    "contents": [
+                     {
+                      "continuationItemRenderer": {
+                       "trigger": "CONTINUATION_TRIGGER_ON_ITEM_SHOWN",
+                       "continuationEndpoint": {
+                        "commandMetadata": {},
+                        "continuationCommand": {
+                         "token": "token-71",
+                         "request": "CONTINUATION_REQUEST_TYPE_BROWSE"
+                        }
+                       }
+                      }
+                     }
+                    ],
+                    "sectionIdentifier": "token-72",
+                    "targetId": "token-72"
+                   }
+                  }
+                 ],
+                 "scrollPaneStyle": {
+                  "scrollable": true
+                 }
+                }
+               },
+               "targetId": "token-70",
+               "identifier": {
+                "surface": "ENGAGEMENT_PANEL_SURFACE_BROWSE",
+                "tag": "token-70"
+               }
+              }
+             },
+             "identifier": {
+              "surface": "ENGAGEMENT_PANEL_SURFACE_BROWSE",
+              "tag": "token-70"
+             },
+             "engagementPanelPresentationConfigs": {
+              "engagementPanelPopupPresentationConfig": {
+               "popupType": "PANEL_POPUP_TYPE_DIALOG"
+              }
+             }
+            }
+           }
+          }
+         }
+        ],
+        "styleRuns": [
+         {
+          "fontName": "",
+          "fontSize": 0,
+          "weightLabel": "FONT_WEIGHT_MEDIUM"
+         }
+        ]
+       },
+       "rendererContext": {}
+      }
+     },
+     "banner": {
+      "imageBannerViewModel": {
+       "image": {
+        "sources": [
+         {
+          "url": "https://yt3.ggpht.com/image-37",
+          "width": 1060,
+          "height": 175
+         },
+         {
+          "url": "https://yt3.ggpht.com/image-38",
+          "width": 1138,
+          "height": 188
+         },
+         {
+          "url": "https://yt3.ggpht.com/image-39",
+          "width": 1707,
+          "height": 283
+         },
+         {
+          "url": "https://yt3.ggpht.com/image-40",
+          "width": 2120,
+          "height": 351
+         },
+         {
+          "url": "https://yt3.ggpht.com/image-41",
+          "width": 2276,
+          "height": 377
+         },
+         {
+          "url": "https://yt3.ggpht.com/image-42",
+          "width": 2560,
+          "height": 424
+         }
+        ]
+       },
+       "style": "IMAGE_BANNER_STYLE_INSET",
+       "rendererContext": {}
+      }
+     },
+     "rendererContext": {}
+    }
+   }
+  }
+ }
+}

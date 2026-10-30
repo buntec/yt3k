@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react';
+import { useMemo, useSyncExternalStore } from 'react';
 
 /** The colors a group can have: those both Badge and Token come in. */
 export const GROUP_COLORS = [
@@ -215,6 +215,30 @@ export function setGroupFilter(value: GroupFilter) {
     console.warn(err);
   }
   for (const listener of filterListeners) listener();
+}
+
+/**
+ * The group filter last chosen, which Subs and Live share, and whether a
+ * channel passes it. A group deleted meanwhile, e.g. in another tab, leaves
+ * all channels shown.
+ */
+export function useChannelFilter() {
+  const { groups, isLoaded } = useGroups();
+  const stored = useGroupFilter();
+  const group = groups.find((g) => g.id === stored);
+  const filter: GroupFilter = stored === 'ungrouped' || group || !isLoaded ? stored : 'all';
+
+  const includes = useMemo(() => {
+    if (filter === 'all') return () => true;
+    if (filter === 'ungrouped') {
+      const grouped = new Set(groups.flatMap((g) => g.channelIds));
+      return (channelId: string) => !grouped.has(channelId);
+    }
+    const ids = new Set(groups.find((g) => g.id === filter)?.channelIds);
+    return (channelId: string) => ids.has(channelId);
+  }, [filter, groups]);
+
+  return { filter, group, includes };
 }
 
 function subscribeToFilter(onChange: () => void) {

@@ -31,7 +31,8 @@ export type VideoList = ReturnType<typeof createVideoList>;
  */
 export function createVideoList(load: {
   first: () => Promise<VideoListPage>;
-  more: (continuation: string) => Promise<VideoListPage>;
+  /** Lists that come in one piece have no continuation and need none */
+  more?: (continuation: string) => Promise<VideoListPage>;
 }) {
   let state: VideoListState = { videos: [], loading: 'idle', removals: {} };
   const listeners = new Set<() => void>();
@@ -89,7 +90,7 @@ export function createVideoList(load: {
 
     /** Appends the next page, skipping videos already in the list. */
     async loadMore() {
-      if (state.loading !== 'idle' || !state.continuation) return;
+      if (state.loading !== 'idle' || !state.continuation || !load.more) return;
       update({ loading: 'more', error: undefined });
       try {
         const page = await load.more(state.continuation);

@@ -11,6 +11,7 @@ import { AccountStatus } from './account';
 import { setAutoplay, useAutoplay } from './autoplay';
 import { FeedPage } from './feed/FeedPage';
 import { HistoryPage } from './history/HistoryPage';
+import { LivePage } from './live/LivePage';
 import { PlayerProvider } from './player';
 import { ROUTES, type Route, routeHref, useRoute } from './router';
 import { SubscriptionsPage } from './subscriptions/SubscriptionsPage';
@@ -23,6 +24,7 @@ const VERSION = browser.runtime.getManifest().version;
 
 const PAGES: Record<Route, () => React.ReactNode> = {
   subscriptions: SubscriptionsPage,
+  live: LivePage,
   feed: FeedPage,
   'watch-later': WatchLaterPage,
   history: HistoryPage,

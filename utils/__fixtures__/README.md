@@ -14,6 +14,12 @@ random, and colors taken from thumbnails are left out.
 - `watch-later.json`: the playlist part of the Watch later page's `ytInitialData`
 - `history.json`: the day sections of the History page's `ytInitialData`
 - `history-continuation.json`: YouTube's API response for the next part of History
+- `subscriptions-feed.json`: YouTube's API response for the subscriptions feed,
+  with a few of the live streams at its top
+- `channel-live.json`: YouTube's API response for the Live tab of a channel that
+  is live, with its header
+- `channel-header.json`: the header of YouTube's API response for a subscribed
+  channel's Videos tab, of a channel that isn't live
 
 Each keeps only a few items of each kind: regular videos, a collaboration, a
 playlist, a shelf and the token for the next page (Watch later has one only
@@ -31,3 +37,8 @@ When YouTube changes its data and the parsers need updating:
 3. Run `pbpaste | node utils/__fixtures__/save.mjs`.
 4. Look over the diff for anything that wasn't anonymized, then update the
    parsers and the expected values in the tests.
+
+The subscriptions feed and the Live tab need someone you subscribe to to be
+live. When nobody is, the capture leaves them out and `save.mjs` keeps their
+files. Capture them later, when someone is live, with
+`pbpaste | node utils/__fixtures__/save.mjs subscriptionsFeed channelLive`.
