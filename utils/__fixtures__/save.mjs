@@ -1,5 +1,6 @@
 // Writes the fixtures that capture.js copied (read from stdin) to this folder,
-// or only those named as arguments, e.g. `watchLater`.
+// or only those named as arguments, e.g. `watchLater`. Keeps the files of
+// those it left out, unless named.
 //
 //   pbpaste | node utils/__fixtures__/save.mjs [name...]
 
@@ -22,7 +23,11 @@ const only = process.argv.slice(2);
 const fixtures = JSON.parse(readFileSync(0, 'utf8'));
 for (const [key, file] of Object.entries(FILES)) {
   if (only.length > 0 && !only.includes(key)) continue;
-  if (!fixtures[key]) throw new Error(`Missing "${key}" in the copied fixtures`);
+  if (!fixtures[key]) {
+    if (only.length > 0) throw new Error(`Missing "${key}" in the copied fixtures`);
+    console.log(`Kept ${file}, missing in the copied fixtures`);
+    continue;
+  }
   writeFileSync(new URL(file, import.meta.url), JSON.stringify(fixtures[key], null, 1) + '\n');
   console.log(`Wrote ${file}`);
 }

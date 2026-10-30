@@ -37,3 +37,8 @@ When YouTube changes its data and the parsers need updating:
 3. Run `pbpaste | node utils/__fixtures__/save.mjs`.
 4. Look over the diff for anything that wasn't anonymized, then update the
    parsers and the expected values in the tests.
+
+The subscriptions feed and the Live tab need someone you subscribe to to be
+live. When nobody is, the capture leaves them out and `save.mjs` keeps their
+files. Capture them later, when someone is live, with
+`pbpaste | node utils/__fixtures__/save.mjs subscriptionsFeed channelLive`.

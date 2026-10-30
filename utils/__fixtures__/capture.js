@@ -292,7 +292,9 @@ async function capture() {
   };
 
   // The subscriptions feed: a few of the live streams at its top, a few other
-  // videos and its shelves, of which the parser reads none.
+  // videos and its shelves, of which the parser reads none. Left out with the
+  // Live tab below when nobody subscribed to is live, as the parsers need a
+  // stream; save.mjs then keeps the fixtures there are.
   const isLive = (item) =>
     findAll(item, 'thumbnailBadgeViewModel').some(
       (badge) => badge.badgeStyle === 'THUMBNAIL_OVERLAY_BADGE_STYLE_LIVE',
@@ -304,7 +306,7 @@ async function capture() {
     ...liveItems.slice(0, 3),
     ...subsFeedItems.filter((i) => i.richItemRenderer && !isLive(i)).slice(0, 2),
   ]);
-  const subscriptionsFeed = {
+  const subscriptionsFeed = liveItems.length === 0 ? undefined : {
     contents: {
       richGridRenderer: {
         contents: subsFeedItems
@@ -320,20 +322,25 @@ async function capture() {
 
   // The Live tab of the first channel live in the feed: its header, whose
   // avatar says it's live, its streams on now and a few past ones.
-  const liveChannelId = findAll(liveItems[0], 'browseEndpoint')[0].browseId;
-  const liveTabData = await innertubeRequest('browse', { browseId: liveChannelId, params: 'EgdzdHJlYW1z8gYECgJ6AA==' });
-  const liveGrid = findAll(liveTabData, 'richGridRenderer')[0].contents;
-  const channelLive = {
-    header: liveTabData.header,
-    contents: {
-      richGridRenderer: {
-        contents: [
-          ...liveGrid.filter((i) => i.richItemRenderer && isLive(i)),
-          ...liveGrid.filter((i) => i.richItemRenderer && !isLive(i)).slice(0, 2),
-        ],
+  let channelLive;
+  if (liveItems.length > 0) {
+    const liveChannelId = findAll(liveItems[0], 'browseEndpoint')[0].browseId;
+    const liveTabData = await innertubeRequest('browse', { browseId: liveChannelId, params: 'EgdzdHJlYW1z8gYECgJ6AA==' });
+    const liveGrid = findAll(liveTabData, 'richGridRenderer')[0].contents;
+    channelLive = {
+      header: liveTabData.header,
+      contents: {
+        richGridRenderer: {
+          contents: [
+            ...liveGrid.filter((i) => i.richItemRenderer && isLive(i)),
+            ...liveGrid.filter((i) => i.richItemRenderer && !isLive(i)).slice(0, 2),
+          ],
+        },
       },
-    },
-  };
+    };
+  } else {
+    console.warn('Nobody subscribed to is live: leaving out subscriptionsFeed and channelLive.');
+  }
 
   // The header of a subscribed channel that isn't live, from its Videos tab.
   let channelHeader;
