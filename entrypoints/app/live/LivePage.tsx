@@ -3,14 +3,14 @@ import { Clock } from 'lucide-react';
 import type { ListedVideo } from '@/utils/youtube';
 import { useChannelFilter } from '../subscriptions/groups';
 import { GroupsNav } from '../subscriptions/GroupControls';
-import { refreshStaleFeeds, useSubscriptions } from '../subscriptions/store';
+import { useSubscriptions } from '../subscriptions/store';
 import { type VideoAction, VideoListView } from '../videos/VideoListView';
 import { saveToWatchLater } from '../watch-later/store';
 import { live } from './store';
 
 /** The subscribed channels' live streams, filtered by the groups on Subs. */
 export function LivePage() {
-  const { channels } = useSubscriptions();
+  const { channels, status, isRefreshing } = useSubscriptions();
   const { videos } = live.use();
   const { filter, group, includes } = useChannelFilter();
 
@@ -21,13 +21,12 @@ export function LivePage() {
   }, [channels, videos]);
 
   // Looks for streams again every minute while the page is shown and right
-  // away on coming back to the browser tab, along with the feeds that got
+  // away on coming back to the browser tab, after loading the feeds that got
   // old, which tell what channels are live. Leaving the page has it look
   // again when it's next shown.
   useEffect(() => {
     const refreshIfVisible = () => {
       if (document.visibilityState !== 'visible') return;
-      void refreshStaleFeeds();
       void live.refresh();
     };
     const timer = setInterval(refreshIfVisible, 60 * 1000);
@@ -43,7 +42,8 @@ export function LivePage() {
     <VideoListView
       title="Live"
       list={live}
-      loadingText="Looking for live streams…"
+      // Checking every channel for streams can take a while after some time away.
+      loadingText={isRefreshing && status.text ? status.text : 'Looking for live streams…'}
       empty={{
         title: 'Nobody is live',
         description: 'Live streams of the channels you subscribe to show up here.',

@@ -66,6 +66,7 @@ let state: SubscriptionsState = {
 };
 const listeners = new Set<() => void>();
 let cached: Promise<void> | undefined;
+let reloading: Promise<void> | undefined;
 
 export function useSubscriptions(): SubscriptionsState {
   void loadSubscriptions();
@@ -79,6 +80,16 @@ export function useSubscriptions(): SubscriptionsState {
 export async function loadSubscriptions(): Promise<SubscriptionsState> {
   cached ??= load();
   await cached;
+  return state;
+}
+
+/**
+ * The subscriptions and feeds once those that got old are loaded again,
+ * waiting for a refresh already under way, e.g. the one loading starts.
+ */
+export async function loadFreshSubscriptions(): Promise<SubscriptionsState> {
+  await loadSubscriptions();
+  await refreshStaleFeeds();
   return state;
 }
 
@@ -119,8 +130,15 @@ export function refreshStaleFeeds() {
   return reload({ subscriptions: false, force: false });
 }
 
-async function reload(options: { subscriptions: boolean; force: boolean }) {
-  if (state.isRefreshing) return;
+/** Joins a refresh under way rather than starting another. */
+function reload(options: { subscriptions: boolean; force: boolean }) {
+  reloading ??= reloadNow(options).finally(() => {
+    reloading = undefined;
+  });
+  return reloading;
+}
+
+async function reloadNow(options: { subscriptions: boolean; force: boolean }) {
   // Leave the page alone when there's nothing to do, as on most timed updates.
   if (!options.subscriptions && staleChannels(false).length === 0) return;
   update({ isRefreshing: true });
