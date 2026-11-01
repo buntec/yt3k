@@ -13,7 +13,9 @@ export default defineConfig({
     // cookies: sign requests to YouTube's API like YouTube's web client does.
     // declarativeNetRequestWithHostAccess: give the embedded player a Referer,
     // and those API requests youtube.com as their origin.
-    permissions: ['storage', 'cookies', 'declarativeNetRequestWithHostAccess'],
+    // identity: sign in to Google to sync groups through Google Drive. It shows
+    // no warning on install, so adding it doesn't make users approve an update.
+    permissions: ['storage', 'cookies', 'declarativeNetRequestWithHostAccess', 'identity'],
     // Lets the extension page fetch YouTube pages and feeds.
     host_permissions: ['*://www.youtube.com/*'],
     action: { default_title: 'Open yt3k' },
@@ -35,7 +37,10 @@ export default defineConfig({
           // Where a signed .xpi looks for updates; the release workflow
           // publishes this file next to it.
           update_url: 'https://github.com/buntec/yt3k/releases/latest/download/updates.json',
-          data_collection_permissions: { required: ['none'] },
+          // Nothing needed to use yt3k, but Drive sync sends the groups (names
+          // and channels) to the user's Google Drive, which Firefox asks to
+          // allow when it's turned on. drive.ts asks for the same.
+          data_collection_permissions: { required: ['none'], optional: ['websiteActivity'] },
         },
       },
     }),

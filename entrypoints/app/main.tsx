@@ -4,6 +4,9 @@ import './style.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
+import { startDriveSync } from './subscriptions/drive';
+
+startDriveSync();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
