@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Download, Pencil, Plus, Trash2, Upload } from 'lucide-react';
+import { Cloud, Download, Pencil, Plus, Trash2, Upload } from 'lucide-react';
 import { Badge } from '@astryxdesign/core/Badge';
 import { Button } from '@astryxdesign/core/Button';
 import { Dialog, DialogHeader } from '@astryxdesign/core/Dialog';
@@ -21,6 +21,7 @@ import { TextInput } from '@astryxdesign/core/TextInput';
 import { useToast } from '@astryxdesign/core/Toast';
 import { Token } from '@astryxdesign/core/Token';
 import type { Channel } from '@/utils/youtube';
+import { DriveSyncButton, DriveSyncDialog, isDriveSyncOffered } from './DriveSyncDialog';
 import {
   GROUP_COLORS,
   type Group,
@@ -46,6 +47,7 @@ export function GroupsNav({ channels, filter }: { channels: Channel[]; filter: G
   const showToast = useToast();
   // The group being edited, or null for a new one
   const [editing, setEditing] = useState<Group | null>();
+  const [isSyncOpen, setIsSyncOpen] = useState(false);
 
   const counts = useMemo(() => {
     const subscribed = new Set(channels.map((c) => c.id));
@@ -148,6 +150,7 @@ export function GroupsNav({ channels, filter }: { channels: Channel[]; filter: G
           title="Groups"
           endContent={
             <HStack gap={1} vAlign="center">
+              <DriveSyncButton onClick={() => setIsSyncOpen(true)} />
               <MoreMenu
                 label="Group options"
                 size="sm"
@@ -165,6 +168,16 @@ export function GroupsNav({ channels, filter }: { channels: Channel[]; filter: G
                     description: 'Adds to the groups here',
                     onClick: upload,
                   },
+                  ...(isDriveSyncOffered
+                    ? [
+                        {
+                          label: 'Sync with Google Drive…',
+                          icon: Cloud,
+                          description: 'Keeps groups the same in all your browsers',
+                          onClick: () => setIsSyncOpen(true),
+                        },
+                      ]
+                    : []),
                 ]}
               />
               <IconButton
@@ -212,6 +225,7 @@ export function GroupsNav({ channels, filter }: { channels: Channel[]; filter: G
       {editing !== undefined && (
         <GroupDialog group={editing ?? undefined} onClose={() => setEditing(undefined)} />
       )}
+      {isSyncOpen && <DriveSyncDialog onClose={() => setIsSyncOpen(false)} />}
     </>
   );
 }

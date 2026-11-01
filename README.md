@@ -13,7 +13,7 @@ It has these tabs:
 - **Subs**: your subscriptions, most recent upload first, each with its latest 1–5
   videos (no Shorts) and an unsubscribe button. Sort channels into colored groups
   and filter by group in the sidebar; groups can be exported to a file and imported
-  again.
+  again, or synced across browsers through your Google Drive.
 - **Live**: the live streams of your subscriptions, updated every minute, filtered
   by the same groups as Subs.
 - **Feed**: YouTube's Home recommendations, without Shorts or shelves. **Not
@@ -35,7 +35,8 @@ Google. It uses YouTube's internal web API, the one youtube.com itself uses,
 which isn't documented and may change at any time, so parts of yt3k can stop
 working until it's updated. Actions like unsubscribing or **Not interested**
 apply to your YouTube account as if you'd done them on youtube.com. yt3k sends
-your data only to YouTube and collects nothing itself. Use it at your own risk.
+your data only to YouTube, and your groups to your own Google Drive if you turn on
+sync, and collects nothing itself. Use it at your own risk.
 
 ## Install
 
@@ -84,6 +85,41 @@ release.
 then, the `build:firefox` one takes the place of an installed release. Its
 button starts out in the Extensions (puzzle-piece) menu; pin it to the toolbar from
 there.
+
+## Google Drive sync
+
+Groups sync through a file in the hidden app data folder of the user's Google Drive
+(scope `drive.appdata`, which sees nothing else in Drive). Each browser keeps all
+groups and merges its copy with the file: of a group changed on two devices, the
+last change wins, and deletions are remembered for a year so they reach the other
+devices. Groups of the same name made on two devices before they synced become one.
+Firefox asks to allow sending data of the kind it calls website activity when sync
+is turned on, and sync stops if that's revoked in `about:addons`.
+**Turn off sync** only stops it in that browser: revoking yt3k's access would stop
+every browser signed in to the same Google account, so that's left to the account's
+[third-party connections](https://myaccount.google.com/connections). Builds without an OAuth client ID leave sync out; dev builds then explain
+how to add one. To set one up:
+
+1. In the [Google Cloud console](https://console.cloud.google.com/), create a
+   project and enable the **Google Drive API** for it.
+2. Under **Google Auth Platform**, configure the consent screen (app name, support
+   email, and for publishing, a home page and privacy policy link), and add the
+   `.../auth/drive.appdata` scope under **Data access**. While the app is in
+   **Testing**, add the Google accounts that may sign in under **Audience**.
+3. Under **Clients**, create a client of type **Web application**, with these
+   **Authorized redirect URIs**. Each build logs its own to the yt3k page's
+   console when the page opens (open the developer tools on it), and **Sync with
+   Google Drive…** in the Subs sidebar's group menu also shows it in a dev build
+   without a client ID:
+   - Chrome and Edge release: `https://jjaoknknijpnllfipmgibppilgojikej.chromiumapp.org/`
+   - Firefox release: `https://ec6355757a5df7e685ed9f07bbda4015cf45c770.extensions.allizom.org/`
+   - Firefox dev build: `https://ab4444a0dd90e69489a7de4f30ed59af513c7c2e.extensions.allizom.org/`
+   - Chrome dev build: the URI it logs, which depends on its folder
+
+   Firefox's come from the SHA-1 hash of the add-on ID, so they stay the same on
+   every machine as long as the IDs in `wxt.config.ts` do.
+4. Put the client ID in `.env` as `WXT_GOOGLE_CLIENT_ID`. It isn't a secret: it's
+   in the built extension either way.
 
 ## Releasing
 
