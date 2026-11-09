@@ -25,6 +25,7 @@ import { IconButton } from '@astryxdesign/core/IconButton';
 import { Layout, LayoutContent, LayoutFooter, LayoutHeader } from '@astryxdesign/core/Layout';
 import { List, ListItem } from '@astryxdesign/core/List';
 import { MoreMenu } from '@astryxdesign/core/MoreMenu';
+import { Overlay } from '@astryxdesign/core/Overlay';
 import { ProgressBar } from '@astryxdesign/core/ProgressBar';
 import { SideNav, SideNavItem, SideNavSection } from '@astryxdesign/core/SideNav';
 import { HStack, StackItem, VStack } from '@astryxdesign/core/Stack';
@@ -277,6 +278,16 @@ const EpisodeRow = memo(function EpisodeRow({
     playEpisode(playable);
   };
 
+  // On the artwork, by the title, shown on hover or focus; in its place without one
+  const playButton = (
+    <IconButton
+      label={position > 0 ? `Resume ${episode.title}` : `Play ${episode.title}`}
+      tooltip={position > 0 ? 'Resume' : 'Play'}
+      icon={<Icon icon={Play} />}
+      onClick={play}
+    />
+  );
+
   return (
     <ListItem
       label={
@@ -299,41 +310,37 @@ const EpisodeRow = memo(function EpisodeRow({
       }
       startContent={
         image ? (
-          <img className="episode-thumbnail" src={image} alt="" loading="lazy" />
-        ) : undefined
+          <Overlay showOn="hover" align="center" content={playButton}>
+            <img className="episode-thumbnail" src={image} alt="" loading="lazy" />
+          </Overlay>
+        ) : (
+          playButton
+        )
       }
       endContent={
-        <HStack gap={1} vAlign="center">
-          <IconButton
-            label={position > 0 ? `Resume ${episode.title}` : `Play ${episode.title}`}
-            tooltip={position > 0 ? 'Resume' : 'Play'}
-            icon={<Icon icon={Play} />}
-            onClick={play}
-          />
-          <DropdownMenu
-            button={{
-              label: 'More actions',
-              isIconOnly: true,
-              icon: <Icon icon={EllipsisVertical} />,
-              variant: 'ghost',
-              size: 'sm',
-            }}
-            hasChevron={false}
-            alignment="end"
-            items={[
-              progress?.isPlayed || position > 0
-                ? {
-                    label: 'Mark as not played',
-                    icon: RotateCcw,
-                    onClick: () => void setPlayed(key, false),
-                  }
-                : { label: 'Mark as played', icon: Check, onClick: () => void setPlayed(key, true) },
-              ...(episode.link
-                ? [{ label: 'Episode page', icon: ExternalLink, onClick: () => openTab(episode.link!) }]
-                : []),
-            ]}
-          />
-        </HStack>
+        <DropdownMenu
+          button={{
+            label: 'More actions',
+            isIconOnly: true,
+            icon: <Icon icon={EllipsisVertical} />,
+            variant: 'ghost',
+            size: 'sm',
+          }}
+          hasChevron={false}
+          alignment="end"
+          items={[
+            progress?.isPlayed || position > 0
+              ? {
+                  label: 'Mark as not played',
+                  icon: RotateCcw,
+                  onClick: () => void setPlayed(key, false),
+                }
+              : { label: 'Mark as played', icon: Check, onClick: () => void setPlayed(key, true) },
+            ...(episode.link
+              ? [{ label: 'Episode page', icon: ExternalLink, onClick: () => openTab(episode.link!) }]
+              : []),
+          ]}
+        />
       }
       align="start"
     />
