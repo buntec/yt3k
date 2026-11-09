@@ -23,10 +23,12 @@ It has these tabs:
   removed from it.
 - **Podcasts**: the newest episodes of podcasts you follow by their RSS feeds,
   which needn't be on YouTube, and can be filtered by podcast in the sidebar.
-  Episodes play here, at the speed you choose, and pick up where you left off.
-  Following a podcast asks the browser to let yt3k read feeds from its site; the
-  podcasts you follow sync through Google Drive along with the groups, while what
-  you played stays in each browser.
+  Find podcasts by name in Apple's podcast directory, or paste the address of a
+  feed or an Apple Podcasts link. Episodes play here, at the speed you choose, and
+  pick up where you left off. Searching asks the browser to let yt3k use the
+  directory the first time, and following a podcast to let it read feeds from its
+  site. The podcasts you follow sync through Google Drive along with the groups,
+  while what you played stays in each browser.
 
 Every tab has a search bar (press `/`), and any video can be saved to or removed
 from Watch later. Videos play in an embedded player that can be minimized into a
@@ -44,7 +46,8 @@ apply to your YouTube account as if you'd done them on youtube.com. yt3k sends
 your data only to YouTube, and your groups and podcasts to your own Google Drive
 if you turn on sync, and collects nothing itself. To show and play podcasts, it
 loads their feeds and episodes from the sites that host them, like any podcast
-app. Use it at your own risk.
+app, and sends what you search for to Apple's podcast directory. Use it at your
+own risk.
 
 ## Install
 

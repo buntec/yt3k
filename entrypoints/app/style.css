@@ -93,6 +93,16 @@ html {
   background: var(--color-background-surface);
 }
 
+/* A podcast's artwork among those a search found */
+.search-thumbnail {
+  display: block;
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 6px;
+  background: var(--color-background-surface);
+}
+
 /* An episode's artwork in the list of episodes */
 .episode-thumbnail {
   display: block;

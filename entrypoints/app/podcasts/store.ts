@@ -6,6 +6,14 @@ import {
   fetchFeed,
   normalizeFeedUrl,
 } from '@/utils/podcast';
+import {
+  DIRECTORY_ORIGIN,
+  type DirectoryPodcast,
+  applePodcastId,
+  browserCountry,
+  lookupDirectory,
+  searchDirectory,
+} from '@/utils/podcastDirectory';
 import { type Show, addShow, getShows, removeShow } from './shows';
 
 /** A show's feed as last loaded */
@@ -178,6 +186,25 @@ export function followPodcast(input: string): Promise<{ title: string }> {
     await addShow(show);
     update({ status: summary((await getShows()).length) });
     return show;
+  })();
+}
+
+/**
+ * The podcasts in Apple's directory matching the words typed, or the one an
+ * Apple Podcasts link leads to, after asking the user to let yt3k search the
+ * directory, the first time. Throws if they don't.
+ *
+ * Like followPodcast, call it right on the user's click or Enter.
+ */
+export function searchPodcasts(input: string): Promise<DirectoryPodcast[]> {
+  const granted = browser.permissions.request({ origins: [DIRECTORY_ORIGIN] });
+  return (async () => {
+    if (!(await granted)) {
+      throw new Error("yt3k needs your permission to search Apple's podcast directory");
+    }
+    const id = applePodcastId(input);
+    if (id) return lookupDirectory(id);
+    return searchDirectory(input.trim(), browserCountry(navigator.languages));
   })();
 }
 

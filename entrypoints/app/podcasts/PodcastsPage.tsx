@@ -28,7 +28,8 @@ import { HStack, StackItem, VStack } from '@astryxdesign/core/Stack';
 import { Heading, Text } from '@astryxdesign/core/Text';
 import { TextInput } from '@astryxdesign/core/TextInput';
 import { useToast } from '@astryxdesign/core/Toast';
-import type { Episode } from '@/utils/podcast';
+import { type Episode, normalizeFeedUrl } from '@/utils/podcast';
+import { type DirectoryPodcast, applePodcastId, isAddress } from '@/utils/podcastDirectory';
 import { type PlayableEpisode, usePlayEpisode } from '../player';
 import { foldForSearch, useSearchShortcut } from '../search';
 import { DriveSyncButton, DriveSyncDialog } from '../subscriptions/DriveSyncDialog';
@@ -40,6 +41,7 @@ import {
   followPodcast,
   refollowPodcast,
   refreshFeeds,
+  searchPodcasts,
   unfollowPodcast,
   usePodcasts,
 } from './store';
@@ -176,7 +178,7 @@ export function PodcastsPage() {
             {!isLoaded ? null : shows.length === 0 ? (
               <EmptyState
                 title="No podcasts yet"
-                description="Follow a podcast by the address of its RSS feed, which podcast websites and directories list."
+                description="Search for podcasts by name, or follow one by the address of its RSS feed."
                 headingLevel={2}
                 actions={<AddPodcastButton variant="primary" />}
               />
@@ -469,73 +471,183 @@ function AddPodcastButton({ variant }: { variant: 'primary' | 'ghost' }) {
 
 function AddPodcastDialog({ onClose }: { onClose: () => void }) {
   const showToast = useToast();
-  const [url, setUrl] = useState('');
+  const { shows } = useShows();
+  const [input, setInput] = useState('');
   const [problem, setProblem] = useState<string>();
-  const [isAdding, setIsAdding] = useState(false);
-  const urlRef = useRef<HTMLInputElement>(null);
+  const [isBusy, setIsBusy] = useState(false);
+  /** What the last search found */
+  const [results, setResults] = useState<{ term: string; podcasts: DirectoryPodcast[] }>();
+  /** The feed of the podcast found that is being followed */
+  const [following, setFollowing] = useState<string>();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const followed = new Set(shows.map((s) => s.feedUrl));
+  // A feed's address is followed right away; words, or an Apple Podcasts
+  // link, are looked up in Apple's directory.
+  const addsByAddress = isAddress(input) && !applePodcastId(input);
 
   // The dialog focuses its title, which hasAutoFocus doesn't win over; this
   // runs after it, the dialog's effects running before its parent's.
-  useEffect(() => urlRef.current?.focus(), []);
+  useEffect(() => inputRef.current?.focus(), []);
 
-  // Right in the click or Enter handler: the browser asks for the permission
-  // to read the feed's site only while handling one.
+  // Right in the click or Enter handler: the browser asks for permissions,
+  // to search the directory or read a feed's site, only while handling one.
   const submit = () => {
-    if (isAdding) return;
-    if (!url.trim()) return setProblem('Enter the address of an RSS feed');
-    setIsAdding(true);
+    const text = input.trim();
+    if (isBusy) return;
+    if (!text) return setProblem("Enter a podcast's name, or the address of its RSS feed");
     setProblem(undefined);
-    followPodcast(url).then(
-      (show) => {
+    setIsBusy(true);
+    const fail = (err: unknown) => {
+      console.warn(err);
+      setIsBusy(false);
+      setProblem(errorMessage(err));
+    };
+    if (addsByAddress) {
+      followPodcast(text).then((show) => {
         showToast({ body: `Following ${show.title}` });
         onClose();
+      }, fail);
+    } else {
+      searchPodcasts(text).then((podcasts) => {
+        setIsBusy(false);
+        setResults({ term: text, podcasts });
+      }, fail);
+    }
+  };
+
+  const follow = (podcast: DirectoryPodcast) => {
+    if (following) return;
+    setFollowing(podcast.feedUrl);
+    followPodcast(podcast.feedUrl).then(
+      (show) => {
+        setFollowing(undefined);
+        showToast({ body: `Following ${show.title}` });
       },
       (err: unknown) => {
         console.warn(err);
-        setIsAdding(false);
-        setProblem(err instanceof Error ? err.message : String(err));
+        setFollowing(undefined);
+        showToast({ type: 'error', body: `Couldn't follow ${podcast.title}: ${errorMessage(err)}` });
       },
     );
   };
 
   return (
-    <Dialog isOpen onOpenChange={(isOpen) => !isOpen && onClose()} purpose="form">
+    <Dialog isOpen onOpenChange={(isOpen) => !isOpen && onClose()} purpose="form" width={560}>
       <Layout
         header={<DialogHeader title="Add podcast" onOpenChange={onClose} />}
         content={
           <LayoutContent>
-            <VStack gap={3}>
-              <TextInput
-                ref={urlRef}
-                label="RSS feed address"
-                placeholder="https://example.com/feed.xml"
-                value={url}
-                onChange={(value) => {
-                  setUrl(value);
-                  setProblem(undefined);
-                }}
-                onEnter={submit}
-                status={problem ? { type: 'error', message: problem } : undefined}
-                autoComplete="off"
-              />
-              <Text type="supporting" as="p">
-                Your browser asks to let yt3k read feeds from the feed's site. The podcast syncs
-                to your other browsers if Google Drive sync is on.
-              </Text>
+            <VStack gap={4}>
+              <VStack gap={2}>
+                <TextInput
+                  ref={inputRef}
+                  label="Podcast name or feed address"
+                  placeholder="Search podcasts, or paste an RSS feed address"
+                  value={input}
+                  onChange={(value) => {
+                    setInput(value);
+                    setProblem(undefined);
+                  }}
+                  onEnter={submit}
+                  status={problem ? { type: 'error', message: problem } : undefined}
+                  autoComplete="off"
+                />
+                <Text type="supporting" as="p">
+                  Searches Apple's podcast directory, which your browser asks to allow the first
+                  time. Following a podcast asks to let yt3k read feeds from its site.
+                </Text>
+              </VStack>
+              {results &&
+                (results.podcasts.length === 0 ? (
+                  <EmptyState
+                    title={`No podcasts found for “${results.term}”`}
+                    description="Only podcasts with a public RSS feed can be followed here."
+                    headingLevel={2}
+                    isCompact
+                  />
+                ) : (
+                  <List hasDividers edge="flush">
+                    {results.podcasts.map((podcast) => (
+                      <FoundPodcast
+                        key={podcast.feedUrl}
+                        podcast={podcast}
+                        isFollowed={followed.has(feedKey(podcast.feedUrl))}
+                        isFollowing={following === podcast.feedUrl}
+                        onFollow={() => follow(podcast)}
+                      />
+                    ))}
+                  </List>
+                ))}
             </VStack>
           </LayoutContent>
         }
         footer={
           <LayoutFooter>
             <HStack gap={2} hAlign="end">
-              <Button label="Cancel" variant="secondary" onClick={onClose} />
-              <Button label="Add" variant="primary" isLoading={isAdding} onClick={submit} />
+              <Button label={results ? 'Done' : 'Cancel'} variant="secondary" onClick={onClose} />
+              <Button
+                label={addsByAddress ? 'Add' : 'Search'}
+                variant="primary"
+                isLoading={isBusy}
+                onClick={submit}
+              />
             </HStack>
           </LayoutFooter>
         }
       />
     </Dialog>
   );
+}
+
+/** A podcast a search found, to follow */
+function FoundPodcast({
+  podcast,
+  isFollowed,
+  isFollowing,
+  onFollow,
+}: {
+  podcast: DirectoryPodcast;
+  isFollowed: boolean;
+  isFollowing: boolean;
+  onFollow: () => void;
+}) {
+  const { episodeCount } = podcast;
+  const details = [
+    podcast.author,
+    episodeCount && `${episodeCount} ${episodeCount === 1 ? 'episode' : 'episodes'}`,
+  ];
+  return (
+    <ListItem
+      label={podcast.title}
+      description={details.filter(Boolean).join(' · ')}
+      startContent={
+        podcast.image ? (
+          <img className="search-thumbnail" src={podcast.image} alt="" loading="lazy" />
+        ) : undefined
+      }
+      endContent={
+        isFollowed ? (
+          <Button label="Following" size="sm" variant="ghost" isDisabled />
+        ) : (
+          // Right in the click handler, like Add: following asks for a permission.
+          <Button label="Follow" size="sm" isLoading={isFollowing} onClick={onFollow} />
+        )
+      }
+    />
+  );
+}
+
+/** A feed's address as the shows followed have it, to tell whether one is */
+function feedKey(feedUrl: string): string {
+  try {
+    return normalizeFeedUrl(feedUrl);
+  } catch {
+    return feedUrl;
+  }
+}
+
+function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
 }
 
 function readFilter(): ShowFilter {
