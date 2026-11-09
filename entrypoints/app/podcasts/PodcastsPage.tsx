@@ -1,7 +1,9 @@
 import { memo, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Check,
+  Cloud,
   Copy,
+  Download,
   EllipsisVertical,
   ExternalLink,
   Play,
@@ -9,6 +11,7 @@ import {
   RotateCcw,
   Trash2,
   TriangleAlert,
+  Upload,
 } from 'lucide-react';
 import { Badge } from '@astryxdesign/core/Badge';
 import { Banner } from '@astryxdesign/core/Banner';
@@ -32,16 +35,24 @@ import { type Episode, normalizeFeedUrl } from '@/utils/podcast';
 import { type DirectoryPodcast, applePodcastId, isAddress } from '@/utils/podcastDirectory';
 import { type PlayableEpisode, usePlayEpisode } from '../player';
 import { foldForSearch, useSearchShortcut } from '../search';
-import { DriveSyncButton, DriveSyncDialog } from '../subscriptions/DriveSyncDialog';
+import {
+  DriveSyncButton,
+  DriveSyncDialog,
+  isDriveSyncOffered,
+} from '../subscriptions/DriveSyncDialog';
 import { type Progress, episodeKey, setPlayed, useProgress } from './progress';
 import { type Show, useShows } from './shows';
 import {
   type Feeds,
+  type ImportResult,
   allowReadingFeeds,
+  exportPodcasts,
   followPodcast,
+  importPodcasts,
   refollowPodcast,
   refreshFeeds,
   searchPodcasts,
+  undoImport,
   unfollowPodcast,
   usePodcasts,
 } from './store';
@@ -171,7 +182,7 @@ export function PodcastsPage() {
                     ? 'A podcast needs your permission'
                     : `${needsAccess.length} podcasts need your permission`
                 }
-                description="Followed in another browser, they sync here, but this browser needs your permission for yt3k to read their feeds."
+                description="Imported, or followed in another browser, they need your permission for yt3k to read their feeds here."
                 endContent={<Button label="Allow" size="sm" clickAction={allowReadingFeeds} />}
               />
             )}
@@ -372,6 +383,64 @@ function PodcastsNav({
     });
   };
 
+  const download = async () => {
+    const url = URL.createObjectURL(new Blob([await exportPodcasts()], { type: 'text/x-opml' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `yt3k-podcasts-${new Date().toISOString().slice(0, 10)}.opml`;
+    link.click();
+    // Firefox may not have started the download when click returns
+    setTimeout(() => URL.revokeObjectURL(url));
+  };
+
+  const upload = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.opml,.xml,text/x-opml,text/xml,application/xml';
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      let result: ImportResult;
+      try {
+        result = await importPodcasts(await file.text());
+      } catch (err) {
+        console.warn(err);
+        showToast({ type: 'error', body: `${file.name} isn't an OPML file` });
+        return;
+      }
+      const { added, alreadyFollowed } = result;
+      if (added.length === 0) {
+        showToast({
+          body: alreadyFollowed
+            ? `You follow every podcast in ${file.name} already`
+            : `${file.name} lists no podcasts`,
+        });
+        return;
+      }
+      const count = `${added.length} ${added.length === 1 ? 'podcast' : 'podcasts'}`;
+      const hide = showToast({
+        body:
+          `Following ${count} from ${file.name}` +
+          (alreadyFollowed ? ` · ${alreadyFollowed} followed already` : ''),
+        uniqueID: 'podcast-import',
+        // Long enough to reach for Undo
+        autoHideDuration: 10_000,
+        endContent: (
+          <Button
+            label="Undo"
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              hide();
+              void undoImport(result);
+            }}
+          />
+        ),
+      });
+    };
+    input.click();
+  };
+
   const copyFeedUrl = async (show: Show) => {
     try {
       await navigator.clipboard.writeText(show.feedUrl);
@@ -396,6 +465,36 @@ function PodcastsNav({
           endContent={
             <HStack gap={1} vAlign="center">
               <DriveSyncButton onClick={() => setIsSyncOpen(true)} />
+              <MoreMenu
+                label="Podcast options"
+                size="sm"
+                alignment="end"
+                items={[
+                  {
+                    label: 'Export as OPML',
+                    icon: Download,
+                    description: 'For other podcast apps, or as a backup',
+                    isDisabled: shows.length === 0,
+                    onClick: () => void download(),
+                  },
+                  {
+                    label: 'Import OPML…',
+                    icon: Upload,
+                    description: 'Follows the podcasts exported from another app',
+                    onClick: upload,
+                  },
+                  ...(isDriveSyncOffered
+                    ? [
+                        {
+                          label: 'Sync with Google Drive…',
+                          icon: Cloud,
+                          description: 'Keeps podcasts the same in all your browsers',
+                          onClick: () => setIsSyncOpen(true),
+                        },
+                      ]
+                    : []),
+                ]}
+              />
               <AddPodcastButton variant="ghost" />
             </HStack>
           }

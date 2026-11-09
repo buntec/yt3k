@@ -15,7 +15,16 @@ export default defineConfig({
     // and those API requests youtube.com as their origin.
     // identity: sign in to Google to sync groups through Google Drive. It shows
     // no warning on install, so adding it doesn't make users approve an update.
-    permissions: ['storage', 'cookies', 'declarativeNetRequestWithHostAccess', 'identity'],
+    // unlimitedStorage: in Chrome and Edge, whose extension storage holds
+    // 10 MB without it, which the episodes of a few hundred podcasts would
+    // fill. Firefox has no such limit; neither browser warns of it.
+    permissions: [
+      'storage',
+      'cookies',
+      'declarativeNetRequestWithHostAccess',
+      'identity',
+      ...(browser === 'firefox' ? [] : ['unlimitedStorage']),
+    ],
     // Lets the extension page fetch YouTube pages and feeds.
     host_permissions: ['*://www.youtube.com/*'],
     // Podcast feeds, from any site: yt3k asks for each feed's site when it's

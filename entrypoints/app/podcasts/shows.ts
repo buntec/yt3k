@@ -85,27 +85,48 @@ async function write(change: (current: SyncedShows) => SyncedShows) {
 }
 
 /** Follows a show; one followed already keeps its date. */
-export async function addShow(show: Omit<Show, 'updatedAt'>) {
+export function addShow(show: Omit<Show, 'updatedAt'>) {
+  return addShows([show]);
+}
+
+/** Follows the shows, e.g. imported from a file, in one change. */
+export async function addShows(shows: Omit<Show, 'updatedAt'>[]) {
   await write((current) => {
-    if (current.shows.some((s) => s.feedUrl === show.feedUrl)) return current;
-    const { [show.feedUrl]: removedAt, ...others } = current.deleted;
-    // Later than its removal even if this device's clock is behind, or
-    // syncing would remove it again
-    const updatedAt = Math.max(Date.now(), (removedAt ?? -1) + 1);
-    return { shows: [...current.shows, { ...show, updatedAt }], deleted: others };
+    const now = Date.now();
+    const followed = new Set(current.shows.map((s) => s.feedUrl));
+    const deleted = { ...current.deleted };
+    const added: Show[] = [];
+    for (const show of shows) {
+      if (followed.has(show.feedUrl)) continue;
+      followed.add(show.feedUrl);
+      // Later than its removal even if this device's clock is behind, or
+      // syncing would remove it again
+      const updatedAt = Math.max(now, (deleted[show.feedUrl] ?? -1) + 1);
+      delete deleted[show.feedUrl];
+      added.push({ ...show, updatedAt });
+    }
+    return added.length ? { shows: [...current.shows, ...added], deleted } : current;
   });
   notifyChanged();
 }
 
 /** Stops following a show. Its episodes' progress stays, for following it again. */
-export async function removeShow(feedUrl: string) {
+export function removeShow(feedUrl: string) {
+  return removeShows([feedUrl]);
+}
+
+/** Stops following the shows, e.g. on Undo of an import, in one change. */
+export async function removeShows(feedUrls: string[]) {
+  const removing = new Set(feedUrls);
   await write((current) => {
-    const show = current.shows.find((s) => s.feedUrl === feedUrl);
-    if (!show) return current;
-    const at = Math.max(Date.now(), show.updatedAt);
+    const now = Date.now();
+    const deleted = { ...current.deleted };
+    for (const show of current.shows) {
+      if (removing.has(show.feedUrl)) deleted[show.feedUrl] = Math.max(now, show.updatedAt);
+    }
     return {
-      shows: current.shows.filter((s) => s !== show),
-      deleted: pruneDeletions({ ...current.deleted, [feedUrl]: at }, Date.now()),
+      shows: current.shows.filter((s) => !removing.has(s.feedUrl)),
+      deleted: pruneDeletions(deleted, now),
     };
   });
   notifyChanged();

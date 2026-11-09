@@ -14,7 +14,8 @@ import {
   lookupDirectory,
   searchDirectory,
 } from '@/utils/podcastDirectory';
-import { type Show, addShow, getShows, removeShow } from './shows';
+import { parseOpml, serializeOpml } from '@/utils/opml';
+import { type Show, addShow, addShows, getShows, removeShows } from './shows';
 
 /** A show's feed as last loaded */
 export interface CachedFeed {
@@ -225,17 +226,77 @@ export function allowReadingFeeds(): Promise<void> {
  * Stops following the show. The permission to read its site stays, so Undo or
  * following it again needn't ask again.
  */
-export async function unfollowPodcast(feedUrl: string) {
-  await removeShow(feedUrl);
-  const { [feedUrl]: _, ...feeds } = state.feeds;
-  const { [feedUrl]: __, ...errors } = state.errors;
+export function unfollowPodcast(feedUrl: string) {
+  return unfollowPodcasts([feedUrl]);
+}
+
+async function unfollowPodcasts(feedUrls: string[]) {
+  await removeShows(feedUrls);
+  const removed = new Set(feedUrls);
+  const keep = ([url]: [string, unknown]) => !removed.has(url);
+  const feeds: Feeds = Object.fromEntries(Object.entries(state.feeds).filter(keep));
   update({
     feeds,
-    errors,
-    needsAccess: state.needsAccess.filter((url) => url !== feedUrl),
+    errors: Object.fromEntries(Object.entries(state.errors).filter(keep)),
+    needsAccess: state.needsAccess.filter((url) => !removed.has(url)),
     status: summary((await getShows()).length),
   });
   await feedsItem.setValue(feeds);
+}
+
+/** What importing a file did */
+export interface ImportResult {
+  /** The feeds of the shows it followed, to unfollow again on Undo */
+  added: string[];
+  /** Those the file listed that were followed already */
+  alreadyFollowed: number;
+}
+
+/**
+ * Follows the podcasts an OPML file lists, from another podcast app or an
+ * export, that aren't followed yet. Throws if it isn't OPML.
+ *
+ * Choosing a file doesn't let the browser ask for permissions, so the feeds
+ * of sites yt3k may not read yet wait for the user to allow them, like
+ * those of podcasts followed in another browser.
+ */
+export async function importPodcasts(text: string): Promise<ImportResult> {
+  const listed = parseOpml(text);
+  const followed = new Set((await getShows()).map((s) => s.feedUrl));
+  const toAdd: Omit<Show, 'updatedAt'>[] = [];
+  let alreadyFollowed = 0;
+  for (const podcast of listed) {
+    let feedUrl: string;
+    try {
+      feedUrl = normalizeFeedUrl(podcast.feedUrl);
+    } catch {
+      continue;
+    }
+    if (followed.has(feedUrl)) {
+      alreadyFollowed++;
+      continue;
+    }
+    followed.add(feedUrl);
+    toAdd.push({ feedUrl, title: podcast.title ?? new URL(feedUrl).hostname });
+  }
+  await addShows(toAdd);
+  void refreshFeeds(false);
+  return { added: toAdd.map((s) => s.feedUrl), alreadyFollowed };
+}
+
+/** Unfollows the shows an import followed, e.g. on Undo. */
+export function undoImport({ added }: ImportResult) {
+  return unfollowPodcasts(added);
+}
+
+/** The podcasts followed as an OPML file, for other podcast apps or a backup */
+export async function exportPodcasts(): Promise<string> {
+  const shows = await getShows();
+  const podcasts = shows.map((s) => ({
+    feedUrl: s.feedUrl,
+    title: state.feeds[s.feedUrl]?.feed.title ?? s.title,
+  }));
+  return serializeOpml(podcasts, new Date());
 }
 
 /** Follows a show again that was just unfollowed, e.g. on Undo. */
