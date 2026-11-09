@@ -8,6 +8,7 @@ export const ROUTES = {
   feed: 'Feed',
   'watch-later': 'Watch later',
   history: 'History',
+  podcasts: 'Podcasts',
 } as const;
 
 export type Route = keyof typeof ROUTES;

@@ -1,0 +1,230 @@
+import { useSyncExternalStore } from 'react';
+import {
+  type FeedValidators,
+  type PodcastFeed,
+  feedOrigin,
+  fetchFeed,
+  normalizeFeedUrl,
+} from '@/utils/podcast';
+import { type Show, addShow, getShows, removeShow } from './shows';
+
+/** A show's feed as last loaded */
+export interface CachedFeed {
+  fetchedAt: number;
+  validators: FeedValidators;
+  feed: PodcastFeed;
+}
+
+export type Feeds = Partial<Record<string, CachedFeed>>;
+
+export interface PodcastsState {
+  /** By feed URL */
+  feeds: Feeds;
+  /** The feeds yt3k may not read yet, e.g. of shows followed in another browser */
+  needsAccess: string[];
+  /** Why loading each feed failed the last time, by feed URL */
+  errors: Partial<Record<string, string>>;
+  isRefreshing: boolean;
+  status: string;
+}
+
+/** How long a feed is shown before it's loaded again */
+const FEED_MAX_AGE = 30 * 60 * 1000;
+/** Feeds can be megabytes, read on this page: a few at a time */
+const CONCURRENT_REQUESTS = 4;
+
+// Not synced: each browser loads the feeds itself.
+const feedsItem = storage.defineItem<Feeds>('local:podcastFeeds', { fallback: {} });
+
+let state: PodcastsState = {
+  feeds: {},
+  needsAccess: [],
+  errors: {},
+  isRefreshing: false,
+  status: '',
+};
+const listeners = new Set<() => void>();
+let loading: Promise<void> | undefined;
+let refreshing: Promise<void> | undefined;
+
+/** The feeds, as stored and then loaded again when they got old */
+export function usePodcasts(): PodcastsState {
+  void load();
+  return useSyncExternalStore(subscribe, () => state);
+}
+
+function load(): Promise<void> {
+  loading ??= (async () => {
+    update({ feeds: await feedsItem.getValue() });
+    void refreshFeeds(false);
+  })();
+  return loading;
+}
+
+function subscribe(onChange: () => void) {
+  listeners.add(onChange);
+  return () => listeners.delete(onChange);
+}
+
+function update(patch: Partial<PodcastsState>) {
+  state = { ...state, ...patch };
+  for (const listener of listeners) listener();
+}
+
+/**
+ * Loads the feeds of the shows followed again: all of them if forced, else
+ * those that got old or are new, e.g. from another browser. Joins a refresh
+ * under way rather than starting another.
+ */
+export function refreshFeeds(force: boolean): Promise<void> {
+  refreshing ??= refreshNow(force).finally(() => {
+    refreshing = undefined;
+  });
+  return refreshing;
+}
+
+async function refreshNow(force: boolean) {
+  await load();
+  const shows = await getShows();
+  const followed = new Set(shows.map((s) => s.feedUrl));
+  // Those of shows no longer followed, e.g. removed in another browser
+  const feeds: Feeds = Object.fromEntries(
+    Object.entries(state.feeds).filter(([url]) => followed.has(url)),
+  );
+  const errors = { ...state.errors };
+  const needsAccess: string[] = [];
+  const stale: Show[] = [];
+  for (const show of shows) {
+    if (!(await mayRead(show.feedUrl))) {
+      needsAccess.push(show.feedUrl);
+      delete errors[show.feedUrl];
+    } else if (force || Date.now() - (feeds[show.feedUrl]?.fetchedAt ?? 0) > FEED_MAX_AGE) {
+      stale.push(show);
+    }
+  }
+  update({ feeds, needsAccess, errors });
+  if (stale.length === 0) {
+    update({ status: summary(shows.length) });
+    return;
+  }
+
+  update({ isRefreshing: true });
+  let done = 0;
+  await forEachConcurrently(stale, CONCURRENT_REQUESTS, async (show) => {
+    const { feedUrl } = show;
+    try {
+      const res = await fetchFeed(feedUrl, state.feeds[feedUrl]?.validators);
+      // Unchanged, the feed already shown, as it was loaded with those validators
+      const feed = res.feed ?? state.feeds[feedUrl]?.feed;
+      // Into the feeds as they are now, which may have changed meanwhile, e.g.
+      // by a show followed while this refresh was under way
+      if (feed) {
+        const loaded: CachedFeed = { fetchedAt: Date.now(), validators: res.validators, feed };
+        update({ feeds: { ...state.feeds, [feedUrl]: loaded } });
+      }
+      delete errors[feedUrl];
+    } catch (err) {
+      console.warn(feedUrl, err);
+      errors[feedUrl] = err instanceof Error ? err.message : String(err);
+    }
+    update({ errors: { ...errors }, status: `Updating ${++done} of ${stale.length}…` });
+  });
+  await feedsItem.setValue(state.feeds);
+  update({ isRefreshing: false, status: summary(shows.length) });
+}
+
+function summary(shows: number) {
+  const failed = Object.keys(state.errors).length;
+  return (
+    `${shows} ${shows === 1 ? 'podcast' : 'podcasts'}` +
+    (failed ? ` · ${failed} ${failed === 1 ? 'feed' : 'feeds'} failed to load` : '')
+  );
+}
+
+/** Whether yt3k may read the feed, which takes the user's permission for its site */
+function mayRead(feedUrl: string): Promise<boolean> {
+  return browser.permissions.contains({ origins: [feedOrigin(feedUrl)] });
+}
+
+/**
+ * Follows the podcast whose feed is at the URL typed, after asking the user
+ * to let yt3k read feeds from its site. Throws if they don't, or if it isn't
+ * a feed.
+ *
+ * Call it right on the user's click: browsers only ask for permissions
+ * while handling one, so nothing may be waited for before asking.
+ */
+export function followPodcast(input: string): Promise<{ title: string }> {
+  let feedUrl: string;
+  try {
+    feedUrl = normalizeFeedUrl(input);
+  } catch (err) {
+    return Promise.reject(err);
+  }
+  const granted = browser.permissions.request({ origins: [feedOrigin(feedUrl)] });
+  return (async () => {
+    if (!(await granted)) {
+      const site = new URL(feedUrl).hostname;
+      throw new Error(`yt3k needs your permission to read feeds from ${site}`);
+    }
+    const { feed, validators } = await fetchFeed(feedUrl);
+    if (!feed) throw new Error('The feed came back empty');
+    await load();
+    const feeds = { ...state.feeds, [feedUrl]: { fetchedAt: Date.now(), validators, feed } };
+    const { [feedUrl]: _, ...errors } = state.errors;
+    update({ feeds, errors });
+    await feedsItem.setValue(feeds);
+    const show = { feedUrl, title: feed.title, ...(feed.image && { image: feed.image }) };
+    await addShow(show);
+    update({ status: summary((await getShows()).length) });
+    return show;
+  })();
+}
+
+/**
+ * Asks the user to let yt3k read the feeds it may not yet, then loads them.
+ * Like followPodcast, call it right on the user's click.
+ */
+export function allowReadingFeeds(): Promise<void> {
+  const origins = [...new Set(state.needsAccess.map(feedOrigin))];
+  const granted = browser.permissions.request({ origins });
+  return (async () => {
+    await granted;
+    await refreshFeeds(false);
+  })();
+}
+
+/**
+ * Stops following the show. The permission to read its site stays, so Undo or
+ * following it again needn't ask again.
+ */
+export async function unfollowPodcast(feedUrl: string) {
+  await removeShow(feedUrl);
+  const { [feedUrl]: _, ...feeds } = state.feeds;
+  const { [feedUrl]: __, ...errors } = state.errors;
+  update({
+    feeds,
+    errors,
+    needsAccess: state.needsAccess.filter((url) => url !== feedUrl),
+    status: summary((await getShows()).length),
+  });
+  await feedsItem.setValue(feeds);
+}
+
+/** Follows a show again that was just unfollowed, e.g. on Undo. */
+export async function refollowPodcast(show: Show) {
+  await addShow({ feedUrl: show.feedUrl, title: show.title, image: show.image });
+  void refreshFeeds(false);
+}
+
+async function forEachConcurrently<T>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<void>,
+) {
+  let next = 0;
+  const worker = async () => {
+    while (next < items.length) await fn(items[next++]!);
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+}

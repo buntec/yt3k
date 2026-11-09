@@ -1,18 +1,28 @@
 import { useSyncExternalStore } from 'react';
-import { type Synced, getSynced, onGroupsChanged, updateSynced } from './groups';
-import { NewerFormatError, mergeSynced, parseSynced, sameSynced, serializeSynced } from './sync';
+import { getSyncedShows, mergeShows, onShowsChanged, updateSyncedShows } from '../podcasts/shows';
+import { getSynced, onGroupsChanged, updateSynced } from './groups';
+import {
+  NewerFormatError,
+  type SyncData,
+  mergeSynced,
+  mergeSyncData,
+  parseSyncData,
+  sameSyncData,
+  serializeSyncData,
+} from './sync';
 
 /*
- * Syncs groups through a file in the hidden app data folder of the user's
- * Google Drive, which only yt3k can see. Signing in uses the browser's
- * identity API, which all of Chrome, Edge and Firefox have, with Google's
- * token flow: tokens last an hour and are renewed without asking while the
- * user stays signed in to Google.
+ * Syncs groups and the podcasts followed through a file in the hidden app
+ * data folder of the user's Google Drive, which only yt3k can see. Signing in
+ * uses the browser's identity API, which all of Chrome, Edge and Firefox
+ * have, with Google's token flow: tokens last an hour and are renewed
+ * without asking while the user stays signed in to Google.
  */
 
 /** The OAuth client ID, from .env: Drive sync is unavailable without one. */
 export const GOOGLE_CLIENT_ID: string = import.meta.env.WXT_GOOGLE_CLIENT_ID ?? '';
 const SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
+// Named before it held podcasts too; renaming it would lose devices' sync.
 const FILE_NAME = 'groups.json';
 const DRIVE = 'https://www.googleapis.com/drive/v3';
 const UPLOAD = 'https://www.googleapis.com/upload/drive/v3';
@@ -133,6 +143,7 @@ export function startDriveSync() {
     showSettings(settings);
   });
   onGroupsChanged(() => requestSync(PUSH_DELAY));
+  onShowsChanged(() => requestSync(PUSH_DELAY));
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') requestSync();
   });
@@ -190,8 +201,8 @@ async function sync(signal: AbortSignal) {
   if (!settings) return;
   await checkDataConsent();
   const ctx: SyncContext = { signal, settings };
-  const local = await getSynced();
-  const localHash = await hash(serializeSynced(local));
+  const local = await getSyncData();
+  const localHash = await hash(serializeSyncData(local));
   const files = await listFiles(ctx);
 
   // Unchanged here and in Drive since the last sync: nothing to do
@@ -215,39 +226,49 @@ async function sync(signal: AbortSignal) {
   );
   const now = Date.now();
   const merged = remotes.reduce(
-    (a, { synced }) => (synced ? mergeSynced(a, synced, now) : a),
+    (a, { synced }) => (synced ? mergeSyncData(a, synced, now) : a),
     local,
   );
-  if (!sameSynced(merged, local)) {
-    // Merged again with the groups as they are now, which may have changed
-    // while Drive was being asked.
+  if (!sameSyncData(merged, local)) {
+    // Merged again with the groups and shows as they are now, which may have
+    // changed while Drive was being asked.
     await updateSynced((current) => {
       signal.throwIfAborted();
-      return mergeSynced(current, merged, now);
+      return mergeSynced(current, merged.groups, now);
+    });
+    await updateSyncedShows((current) => {
+      signal.throwIfAborted();
+      return mergeShows(current, merged.shows, now);
     });
   }
-  const result = await getSynced();
-  const text = serializeSynced(result);
+  const result = await getSyncData();
+  const text = serializeSyncData(result);
 
   const [first, ...duplicates] = remotes;
   let file = first?.file;
   if (!file) {
     file = await createFile(text, ctx);
-  } else if (duplicates.length || !first!.synced || !sameSynced(result, first!.synced)) {
+  } else if (duplicates.length || !first!.synced || !sameSyncData(result, first!.synced)) {
     file = { id: file.id, version: await updateFile(file.id, text, ctx) };
   }
   await Promise.all(duplicates.map(({ file }) => deleteFile(file.id, ctx)));
   return finish(file, await hash(text), ctx);
 }
 
+/** Everything synced, as it is here */
+async function getSyncData(): Promise<SyncData> {
+  const [groups, shows] = await Promise.all([getSynced(), getSyncedShows()]);
+  return { groups, shows };
+}
+
 /**
- * The groups and deletions in a sync file, or undefined if it can't be read,
+ * What a sync file holds, or undefined if it can't be read,
  * e.g. left empty by an upload cut short, which syncing then replaces. Throws
  * if saved by a newer version of yt3k, which mustn't be replaced.
  */
-function readRemote(text: string): Synced | undefined {
+function readRemote(text: string): SyncData | undefined {
   try {
-    return parseSynced(text);
+    return parseSyncData(text);
   } catch (err) {
     if (err instanceof NewerFormatError) throw err;
     console.warn('yt3k: replacing the unreadable sync file in Google Drive', err);
@@ -343,12 +364,14 @@ export function redirectUri(): string {
 
 /**
  * The data Firefox asks the user to allow sending, as declared optional in
- * wxt.config.ts: the groups' names and channels, sent to their Google Drive.
+ * wxt.config.ts: the groups' names and channels, and the podcasts' feeds,
+ * sent to their Google Drive.
  * Other browsers don't ask.
  */
 const DATA_COLLECTION = ['websiteActivity'];
 
-const CONSENT_NEEDED = 'Allow yt3k to send your groups to your Google Drive, so it can sync them';
+const CONSENT_NEEDED =
+  'Allow yt3k to send your groups and podcasts to your Google Drive, so it can sync them';
 
 /** Firefox doesn't allow sending the groups */
 class ConsentError extends Error {}
@@ -428,7 +451,7 @@ async function authorize({
   const account = await fetchAccount(signedIn.value, signal);
   if (expected?.accountId && account.id !== expected.accountId) {
     throw new WrongAccountError(
-      `Signed in as ${account.email ?? 'another Google account'}, but groups sync with ${expected.email ?? 'another one'}. Sign in with that account, or turn sync off and connect again.`,
+      `Signed in as ${account.email ?? 'another Google account'}, but yt3k syncs with ${expected.email ?? 'another one'}. Sign in with that account, or turn sync off and connect again.`,
     );
   }
   const token: Token = { ...signedIn, accountId: account.id };
@@ -687,7 +710,7 @@ function describe(err: unknown): DriveSyncState['error'] {
   if (err instanceof NewerFormatError) {
     return {
       message:
-        'Your groups in Google Drive were saved by a newer version of yt3k: update it to sync',
+        'What yt3k synced to Google Drive was saved by a newer version of yt3k: update it to sync',
       needsSignIn: false,
     };
   }

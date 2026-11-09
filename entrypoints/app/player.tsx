@@ -4,13 +4,33 @@ import { Button } from '@astryxdesign/core/Button';
 import { DialogHeader } from '@astryxdesign/core/Dialog';
 import { useScrollLock } from '@astryxdesign/core/hooks';
 import { Icon } from '@astryxdesign/core/Icon';
+import { Selector } from '@astryxdesign/core/Selector';
+import { HStack, StackItem } from '@astryxdesign/core/Stack';
+import { Text } from '@astryxdesign/core/Text';
 import { VStack } from '@astryxdesign/core/VStack';
 import { extensionHost } from '@/utils/extension';
 import type { Video } from '@/utils/youtube';
 import { useAutoplay } from './autoplay';
+import { getProgress, savePosition } from './podcasts/progress';
+import { SPEEDS, type Speed, setSpeed, useSpeed } from './podcasts/speed';
 
 /** What the player needs to know about a video */
 export type PlayableVideo = Pick<Video, 'id' | 'title' | 'duration' | 'progress'>;
+
+/** What the player needs to know about a podcast episode */
+export interface PlayableEpisode {
+  /** Its progress is kept under it, as made by episodeKey */
+  key: string;
+  title: string;
+  showTitle: string;
+  mediaUrl: string;
+  mediaType?: string;
+  /** Length in seconds, as the feed tells it */
+  duration?: number;
+  image?: string;
+  /** The episode's web page */
+  link?: string;
+}
 
 const EMBED_ORIGIN = 'https://www.youtube.com';
 
@@ -42,15 +62,35 @@ const refererRule = browser.declarativeNetRequest.updateSessionRules({
 
 type OpenPlayer = (video: PlayableVideo, options?: { onClose?: () => void }) => void;
 
-type Playing = { video: PlayableVideo; src: string; onClose?: () => void };
+type PlayEpisode = (episode: PlayableEpisode) => void;
+
+type Playing =
+  | { kind: 'video'; video: PlayableVideo; src: string; onClose?: () => void }
+  /** `start` is where the user left off, in seconds */
+  | { kind: 'episode'; episode: PlayableEpisode; start: number; onClose?: undefined };
 
 const PlayerContext = createContext<OpenPlayer>(() => {
   throw new Error('usePlayer() needs a <PlayerProvider>');
 });
 
+const EpisodePlayerContext = createContext<PlayEpisode>(() => {
+  throw new Error('usePlayEpisode() needs a <PlayerProvider>');
+});
+
 /** Plays a video here, or in a new YouTube tab if it can't be embedded. */
 export function usePlayer(): OpenPlayer {
   return use(PlayerContext);
+}
+
+/** Plays a podcast episode here, from where the user left off. */
+export function usePlayEpisode(): PlayEpisode {
+  return use(EpisodePlayerContext);
+}
+
+/** Whether `playing` is that video or episode */
+function isPlaying(playing: Playing | undefined, id: string) {
+  if (!playing) return false;
+  return (playing.kind === 'video' ? playing.video.id : playing.episode.key) === id;
 }
 
 export function PlayerProvider({ children }: { children: React.ReactNode }) {
@@ -71,7 +111,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   const openPlayer = useCallback<OpenPlayer>(async (video, { onClose } = {}) => {
     // The video is already playing, minimized: bring it back without restarting it.
-    if (currentRef.current?.video.id === video.id) {
+    if (isPlaying(currentRef.current, video.id)) {
       setIsMinimized(false);
       return;
     }
@@ -91,8 +131,18 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     // Embeds always start from the beginning, so pick up where the user left off.
     const start = resumePosition(video);
     if (start) params.set('start', String(start));
-    play({ video, src: `${EMBED_ORIGIN}/embed/${video.id}?${params}`, onClose });
+    play({ kind: 'video', video, src: `${EMBED_ORIGIN}/embed/${video.id}?${params}`, onClose });
   }, [play, autoplay]);
+
+  const playEpisode = useCallback<PlayEpisode>(async (episode) => {
+    if (isPlaying(currentRef.current, episode.key)) {
+      setIsMinimized(false);
+      return;
+    }
+    if (!currentRef.current) setIsMinimized(false);
+    const progress = await getProgress(episode.key);
+    play({ kind: 'episode', episode, start: progress?.isPlayed ? 0 : (progress?.position ?? 0) });
+  }, [play]);
 
   const closePlayer = () => play(undefined);
 
@@ -125,7 +175,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   useScrollLock(current !== undefined && !isMinimized);
 
   useEffect(() => {
-    if (!current) return;
+    if (current?.kind !== 'video') return;
     const onMessage = (event: MessageEvent) => {
       if (event.origin !== EMBED_ORIGIN || event.source !== frameRef.current?.contentWindow) {
         return;
@@ -156,73 +206,202 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     );
   };
 
+  const title = current?.kind === 'video' ? current.video.title : current?.episode.title;
+  const isAudio = current?.kind === 'episode' && !current.episode.mediaType?.startsWith('video/');
+
   return (
     <PlayerContext value={openPlayer}>
-      {children}
-      <VStack
-        as="dialog"
-        ref={dialogRef}
-        className="player"
-        aria-label={current?.video.title}
-        padding={isMinimized ? 2 : 4}
-        gap={isMinimized ? 2 : 3}
-        // A click on the backdrop lands on the dialog, outside its box.
-        onClick={(event) => {
-          if (isMinimized || event.target !== event.currentTarget) return;
-          const box = event.currentTarget.getBoundingClientRect();
-          const { clientX: x, clientY: y } = event;
-          if (x < box.left || x > box.right || y < box.top || y > box.bottom) closePlayer();
-        }}
-      >
-        {current && (
-          <>
-            <DialogHeader
-              title={current.video.title}
-              endContent={
-                isMinimized ? (
-                  <Button
-                    label="Expand player"
-                    tooltip="Expand player"
-                    isIconOnly
-                    icon={<Icon icon={Maximize2} />}
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setIsMinimized(false)}
-                  />
-                ) : (
-                  <>
+      <EpisodePlayerContext value={playEpisode}>
+        {children}
+        <VStack
+          as="dialog"
+          ref={dialogRef}
+          className={isAudio ? 'player is-audio' : 'player'}
+          aria-label={title}
+          padding={isMinimized ? 2 : 4}
+          gap={isMinimized ? 2 : 3}
+          // A click on the backdrop lands on the dialog, outside its box.
+          onClick={(event) => {
+            if (isMinimized || event.target !== event.currentTarget) return;
+            const box = event.currentTarget.getBoundingClientRect();
+            const { clientX: x, clientY: y } = event;
+            if (x < box.left || x > box.right || y < box.top || y > box.bottom) closePlayer();
+          }}
+        >
+          {current && (
+            <>
+              <DialogHeader
+                title={title}
+                endContent={
+                  isMinimized ? (
                     <Button
-                      label="Watch on YouTube"
-                      variant="ghost"
-                      size="sm"
-                      href={watchUrl(current.video)}
-                    />
-                    <Button
-                      label="Minimize player"
-                      tooltip="Minimize player"
+                      label="Expand player"
+                      tooltip="Expand player"
                       isIconOnly
-                      icon={<Icon icon={PictureInPicture2} />}
+                      icon={<Icon icon={Maximize2} />}
                       variant="ghost"
                       size="sm"
-                      onClick={() => setIsMinimized(true)}
+                      onClick={() => setIsMinimized(false)}
                     />
-                  </>
-                )
-              }
-              onOpenChange={closePlayer}
-            />
-            <iframe
-              ref={frameRef}
-              className="player-frame"
-              src={current.src}
-              title="YouTube video player"
-              allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
-              onLoad={onFrameLoad}
-            />
-          </>
-        )}
-      </VStack>
+                  ) : (
+                    <>
+                      {current.kind === 'video' ? (
+                        <Button
+                          label="Watch on YouTube"
+                          variant="ghost"
+                          size="sm"
+                          href={watchUrl(current.video)}
+                        />
+                      ) : (
+                        <>
+                          <SpeedSelector />
+                          {current.episode.link && (
+                            <Button
+                              label="Episode page"
+                              variant="ghost"
+                              size="sm"
+                              href={current.episode.link}
+                              target="_blank"
+                            />
+                          )}
+                        </>
+                      )}
+                      <Button
+                        label="Minimize player"
+                        tooltip="Minimize player"
+                        isIconOnly
+                        icon={<Icon icon={PictureInPicture2} />}
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setIsMinimized(true)}
+                      />
+                    </>
+                  )
+                }
+                onOpenChange={closePlayer}
+              />
+              {current.kind === 'video' ? (
+                <iframe
+                  ref={frameRef}
+                  className="player-frame"
+                  src={current.src}
+                  title="YouTube video player"
+                  allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+                  onLoad={onFrameLoad}
+                />
+              ) : (
+                <EpisodeMedia
+                  // A new element for each episode, so one's position isn't saved for another
+                  key={current.episode.key}
+                  episode={current.episode}
+                  start={current.start}
+                  isAudio={isAudio}
+                />
+              )}
+            </>
+          )}
+        </VStack>
+      </EpisodePlayerContext>
     </PlayerContext>
+  );
+}
+
+/** How often the position is saved while playing, in ms */
+const SAVE_INTERVAL = 5000;
+
+/**
+ * The episode's audio, or video, with the browser's own controls, starting
+ * where the user left off and keeping where they are as it plays.
+ */
+function EpisodeMedia({
+  episode,
+  start,
+  isAudio,
+}: {
+  episode: PlayableEpisode;
+  start: number;
+  isAudio: boolean;
+}) {
+  const mediaRef = useRef<HTMLMediaElement>(null);
+  const speed = useSpeed();
+
+  useEffect(() => {
+    const media = mediaRef.current!;
+    // The default too, which loading the media resets the speed to
+    media.defaultPlaybackRate = speed;
+    media.playbackRate = speed;
+  }, [speed]);
+
+  useEffect(() => {
+    const media = mediaRef.current!;
+    let savedAt = 0;
+    const save = () => {
+      if (media.currentTime === 0) return;
+      savedAt = Date.now();
+      const duration = Number.isFinite(media.duration) ? media.duration : episode.duration;
+      void savePosition(episode.key, media.currentTime, duration);
+    };
+    const onTimeUpdate = () => {
+      if (Date.now() - savedAt >= SAVE_INTERVAL) save();
+    };
+    const onLoadedMetadata = () => {
+      if (start > 0) media.currentTime = start;
+    };
+    media.addEventListener('loadedmetadata', onLoadedMetadata);
+    media.addEventListener('timeupdate', onTimeUpdate);
+    // Ending pauses it too, saving it as played
+    media.addEventListener('pause', save);
+    return () => {
+      save();
+      media.removeEventListener('loadedmetadata', onLoadedMetadata);
+      media.removeEventListener('timeupdate', onTimeUpdate);
+      media.removeEventListener('pause', save);
+    };
+  }, [episode, start]);
+
+  // Clicked to play, so it starts on its own, unlike YouTube's videos: no
+  // watch history to keep it out of.
+  const props = {
+    src: episode.mediaUrl,
+    controls: true,
+    autoPlay: true,
+    preload: 'auto',
+    onRateChange: (event: React.SyntheticEvent<HTMLMediaElement>) => {
+      // The browser's own speed menu, where it has one
+      const rate = event.currentTarget.playbackRate;
+      if (SPEEDS.includes(rate as Speed)) setSpeed(rate as Speed);
+    },
+  };
+
+  if (!isAudio) {
+    return <video ref={mediaRef as React.RefObject<HTMLVideoElement>} className="player-frame" {...props} />;
+  }
+  return (
+    <HStack gap={4} vAlign="center">
+      {episode.image && <img className="episode-art" src={episode.image} alt="" />}
+      <StackItem size="fill">
+        <VStack gap={2}>
+          <Text type="supporting">{episode.showTitle}</Text>
+          <audio ref={mediaRef as React.RefObject<HTMLAudioElement>} className="player-audio" {...props} />
+        </VStack>
+      </StackItem>
+    </HStack>
+  );
+}
+
+/** The playback speed of episodes, which every episode keeps */
+function SpeedSelector() {
+  const speed = useSpeed();
+  return (
+    <Selector
+      label="Playback speed"
+      isLabelHidden
+      variant="secondary"
+      size="sm"
+      options={SPEEDS.map((s) => ({ value: String(s), label: `${s}×` }))}
+      value={String(speed)}
+      onChange={(value) => setSpeed(Number(value) as Speed)}
+    />
   );
 }
 

@@ -18,6 +18,9 @@ export default defineConfig({
     permissions: ['storage', 'cookies', 'declarativeNetRequestWithHostAccess', 'identity'],
     // Lets the extension page fetch YouTube pages and feeds.
     host_permissions: ['*://www.youtube.com/*'],
+    // Podcast feeds, from any site: yt3k asks for each feed's site when it's
+    // followed, so installing or updating asks for nothing more.
+    optional_host_permissions: ['*://*/*'],
     action: { default_title: 'Open yt3k' },
     // An unpacked extension's ID, which its stored groups and subscriptions
     // belong to, otherwise depends on the folder it's loaded from. This public
@@ -38,8 +41,9 @@ export default defineConfig({
           // publishes this file next to it.
           update_url: 'https://github.com/buntec/yt3k/releases/latest/download/updates.json',
           // Nothing needed to use yt3k, but Drive sync sends the groups (names
-          // and channels) to the user's Google Drive, which Firefox asks to
-          // allow when it's turned on. drive.ts asks for the same.
+          // and channels) and the podcasts' feeds to the user's Google Drive,
+          // which Firefox asks to allow when it's turned on. drive.ts asks for
+          // the same.
           data_collection_permissions: { required: ['none'], optional: ['websiteActivity'] },
         },
       },

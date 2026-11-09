@@ -13,6 +13,7 @@ import { FeedPage } from './feed/FeedPage';
 import { HistoryPage } from './history/HistoryPage';
 import { LivePage } from './live/LivePage';
 import { PlayerProvider } from './player';
+import { PodcastsPage } from './podcasts/PodcastsPage';
 import { ROUTES, type Route, routeHref, useRoute } from './router';
 import { SubscriptionsPage } from './subscriptions/SubscriptionsPage';
 import { WatchLaterPage } from './watch-later/WatchLaterPage';
@@ -28,6 +29,7 @@ const PAGES: Record<Route, () => React.ReactNode> = {
   feed: FeedPage,
   'watch-later': WatchLaterPage,
   history: HistoryPage,
+  podcasts: PodcastsPage,
 };
 
 export function App() {

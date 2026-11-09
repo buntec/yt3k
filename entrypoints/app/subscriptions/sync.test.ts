@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
+import { type Show, type SyncedShows, mergeShows } from '../podcasts/shows';
 import { type Group, type Synced, stampChanges } from './groups';
-import { NewerFormatError, mergeSynced, parseSynced, sameSynced, serializeSynced } from './sync';
+import {
+  NewerFormatError,
+  type SyncData,
+  mergeSynced,
+  parseSyncData,
+  sameSynced,
+  sameSyncData,
+  serializeSyncData,
+} from './sync';
 
 const NOW = Date.UTC(2026, 10, 1);
 const DAY = 24 * 60 * 60 * 1000;
@@ -185,32 +194,103 @@ describe('mergeSynced', () => {
   });
 });
 
-describe('parseSynced', () => {
-  it('reads back what serializeSynced saved', () => {
-    const value = synced([music, news], { c: at(5) });
-    expect(parseSynced(serializeSynced(value))).toEqual(value);
+const show: Show = { feedUrl: 'https://example.com/feed.xml', title: 'Show', updatedAt: at(10) };
+const other: Show = {
+  feedUrl: 'https://example.org/rss',
+  title: 'Other',
+  image: 'https://example.org/art.jpg',
+  updatedAt: at(10),
+};
+
+function shows(list: Show[], deleted: SyncedShows['deleted'] = {}): SyncedShows {
+  return { shows: list, deleted };
+}
+
+function data(groups: Synced, followed: SyncedShows = shows([])): SyncData {
+  return { groups, shows: followed };
+}
+
+describe('parseSyncData', () => {
+  it('reads back what serializeSyncData saved', () => {
+    const value = data(synced([music, news], { c: at(5) }), shows([show, other], { x: at(3) }));
+    expect(parseSyncData(serializeSyncData(value))).toEqual(value);
   });
 
   it('reads back the groups a group absorbed', () => {
     const absorbed = { b: { channelIds: ['UC2'], updatedAt: at(5) } };
-    const value = synced([{ ...music, absorbed }]);
-    expect(parseSynced(serializeSynced(value))).toEqual(value);
+    const value = data(synced([{ ...music, absorbed }]));
+    expect(parseSyncData(serializeSyncData(value))).toEqual(value);
   });
 
-  it("skips groups it can't read and keeps the rest", () => {
+  it("skips groups and podcasts it can't read and keeps the rest", () => {
     const text = JSON.stringify({
-      format: 'yt3k-sync-1',
+      format: 'yt3k-sync-2',
       groups: [music, { id: 'x', name: '', channelIds: [] }, { name: 'No ID', channelIds: [] }],
       deleted: { c: 5, d: 'soon' },
+      podcasts: [show, { title: 'No feed', updatedAt: 1 }, { feedUrl: 'https://x', title: 'Undated' }],
+      podcastsDeleted: { y: 7, z: null },
     });
-    expect(parseSynced(text)).toEqual(synced([music], { c: 5 }));
+    expect(parseSyncData(text)).toEqual(data(synced([music], { c: 5 }), shows([show], { y: 7 })));
+  });
+
+  it('reads files from before podcasts synced, as following none', () => {
+    const text = JSON.stringify({ format: 'yt3k-sync-1', groups: [music], deleted: {} });
+    expect(parseSyncData(text)).toEqual(data(synced([music])));
   });
 
   it('rejects other files, and tells a later format apart', () => {
-    expect(() => parseSynced('{}')).toThrow();
-    expect(() => parseSynced(JSON.stringify({ format: 'yt3k-groups-1', groups: [] }))).toThrow();
-    expect(() => parseSynced(JSON.stringify({ format: 'yt3k-sync-2', groups: [] }))).toThrow(
+    expect(() => parseSyncData('{}')).toThrow();
+    expect(() => parseSyncData(JSON.stringify({ format: 'yt3k-groups-1', groups: [] }))).toThrow();
+    expect(() => parseSyncData(JSON.stringify({ format: 'yt3k-sync-3', groups: [] }))).toThrow(
       NewerFormatError,
     );
+  });
+});
+
+describe('mergeShows', () => {
+  /** Merged both ways, which must agree */
+  function mergeBoth(a: SyncedShows, b: SyncedShows): SyncedShows {
+    const ab = mergeShows(a, b, NOW);
+    expect(mergeShows(b, a, NOW)).toEqual(ab);
+    return ab;
+  }
+
+  it('keeps the podcasts of both', () => {
+    expect(mergeBoth(shows([show]), shows([other])).shows).toEqual([show, other]);
+  });
+
+  it('keeps the copy added last', () => {
+    const renamed = { ...show, title: 'Renamed', updatedAt: at(20) };
+    expect(mergeBoth(shows([show]), shows([renamed])).shows).toEqual([renamed]);
+  });
+
+  it('picks the same copy either way when both were added at once', () => {
+    mergeBoth(shows([show]), shows([{ ...show, title: 'Same time' }]));
+  });
+
+  it('drops a podcast removed after it was added', () => {
+    const merged = mergeBoth(shows([show, other]), shows([other], { [show.feedUrl]: at(15) }));
+    expect(merged).toEqual(shows([other], { [show.feedUrl]: at(15) }));
+  });
+
+  it('keeps a podcast added again after it was removed', () => {
+    const again = { ...show, updatedAt: at(20) };
+    const merged = mergeBoth(shows([again]), shows([], { [show.feedUrl]: at(15) }));
+    expect(merged.shows).toEqual([again]);
+  });
+
+  it('forgets removals older than a year', () => {
+    const merged = mergeBoth(shows([]), shows([], { old: NOW - 400 * DAY, recent: at(1) }));
+    expect(merged.deleted).toEqual({ recent: at(1) });
+  });
+});
+
+describe('sameSyncData', () => {
+  it('tells podcasts apart, whatever their order', () => {
+    const groups = synced([music]);
+    expect(sameSyncData(data(groups, shows([show, other])), data(groups, shows([other, show])))).toBe(
+      true,
+    );
+    expect(sameSyncData(data(groups, shows([show])), data(groups, shows([other])))).toBe(false);
   });
 });

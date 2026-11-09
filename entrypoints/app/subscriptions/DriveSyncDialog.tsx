@@ -74,13 +74,13 @@ export function DriveSyncDialog({ onClose }: { onClose: () => void }) {
     content = (
       <VStack gap={3}>
         <Text as="p">
-          Keeps your groups the same in every browser where you turn this on with the same Google
-          account, Chrome and Firefox alike. yt3k keeps them in a hidden folder in your Google Drive
-          that only it can see.
+          Keeps your groups and podcasts the same in every browser where you turn this on with the
+          same Google account, Chrome and Firefox alike. yt3k keeps them in a hidden folder in your
+          Google Drive that only it can see.
         </Text>
         <Text as="p">
-          Groups here and in Drive are merged the first time, so none are lost: groups of the same
-          name become one.
+          Groups and podcasts here and in Drive are merged the first time, so none are lost: groups
+          of the same name become one.
         </Text>
         {problem && (
           <Banner status="error" title="Couldn't connect Google Drive" description={problem} />
@@ -97,7 +97,9 @@ export function DriveSyncDialog({ onClose }: { onClose: () => void }) {
     content = (
       <VStack gap={3}>
         <Text as="p">
-          {sync.email ? `Syncing groups with ${sync.email}.` : 'Syncing groups with Google Drive.'}
+          {sync.email
+            ? `Syncing groups and podcasts with ${sync.email}.`
+            : 'Syncing groups and podcasts with Google Drive.'}
         </Text>
         <SyncProgress />
         {problem && <Banner status="error" title="Couldn't sign in" description={problem} />}
@@ -118,7 +120,8 @@ export function DriveSyncDialog({ onClose }: { onClose: () => void }) {
           />
         )}
         <Text type="supporting" as="p">
-          Turning sync off keeps your groups here, and in Drive for your other devices.
+          Turning sync off keeps your groups and podcasts here, and in Drive for your other
+          devices.
         </Text>
       </VStack>
     );

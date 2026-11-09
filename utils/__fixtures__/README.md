@@ -20,6 +20,8 @@ random, and colors taken from thumbnails are left out.
   is live, with its header
 - `channel-header.json`: the header of YouTube's API response for a subscribed
   channel's Videos tab, of a channel that isn't live
+- `podcast-feed.xml`: a made-up podcast RSS feed for `utils/podcast.test.ts`, not
+  captured: it has the parts real feeds have, and some they commonly get wrong
 
 Each keeps only a few items of each kind: regular videos, a collaboration, a
 playlist, a shelf and the token for the next page (Watch later has one only
