@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import { addShows, getSyncedShows, removeShows } from './shows';
+import { addShows, getSyncedShows, moveShow, removeShows } from './shows';
 
 const a = { feedUrl: 'https://example.com/a.xml', title: 'A' };
 const b = { feedUrl: 'https://example.com/b.xml', title: 'B' };
@@ -26,6 +26,27 @@ describe('following and unfollowing shows', () => {
     const { shows, deleted } = await getSyncedShows();
     expect(shows.map((s) => s.feedUrl)).toEqual([b.feedUrl]);
     expect(deleted[a.feedUrl]).toBe(2000);
+  });
+
+  it('moves a show to its new address, leaving the old one removed', async () => {
+    vi.useFakeTimers({ now: 1000, toFake: ['Date'] });
+    await addShows([a, b]);
+    vi.setSystemTime(2000);
+    const moved = { feedUrl: 'https://example.net/a.xml', title: 'A, moved' };
+    await moveShow(a.feedUrl, moved);
+    const { shows, deleted } = await getSyncedShows();
+    expect(shows.map((s) => [s.feedUrl, s.title, s.updatedAt])).toEqual([
+      [moved.feedUrl, 'A, moved', 2000],
+      [b.feedUrl, 'B', 1000],
+    ]);
+    expect(deleted).toEqual({ [a.feedUrl]: 2000 });
+  });
+
+  it('moves a show to an address followed already by just leaving the old one', async () => {
+    await addShows([a, b]);
+    await moveShow(a.feedUrl, { feedUrl: b.feedUrl, title: 'Ignored' });
+    const { shows } = await getSyncedShows();
+    expect(shows.map((s) => [s.feedUrl, s.title])).toEqual([[b.feedUrl, 'B']]);
   });
 
   it('follows a show again after its removal, even with a clock behind', async () => {

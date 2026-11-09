@@ -4,6 +4,7 @@ import {
   type PodcastFeed,
   feedOrigin,
   fetchFeed,
+  movedFeedUrl,
   normalizeFeedUrl,
 } from '@/utils/podcast';
 import {
@@ -15,7 +16,16 @@ import {
   searchDirectory,
 } from '@/utils/podcastDirectory';
 import { parseOpml, serializeOpml } from '@/utils/opml';
-import { type Show, addShow, addShows, getShows, removeShows } from './shows';
+import { moveProgress } from './progress';
+import {
+  type Show,
+  addShow,
+  addShows,
+  getShows,
+  getSyncedShows,
+  moveShow,
+  removeShows,
+} from './shows';
 
 /** A show's feed as last loaded */
 export interface CachedFeed {
@@ -31,6 +41,8 @@ export interface PodcastsState {
   feeds: Feeds;
   /** The feeds yt3k may not read yet, e.g. of shows followed in another browser */
   needsAccess: string[];
+  /** Where shows moved to, by their feed URL, that yt3k may not read yet */
+  movesNeedAccess: Partial<Record<string, string>>;
   /** Why loading each feed failed the last time, by feed URL */
   errors: Partial<Record<string, string>>;
   isRefreshing: boolean;
@@ -48,6 +60,7 @@ const feedsItem = storage.defineItem<Feeds>('local:podcastFeeds', { fallback: {}
 let state: PodcastsState = {
   feeds: {},
   needsAccess: [],
+  movesNeedAccess: {},
   errors: {},
   isRefreshing: false,
   status: '',
@@ -55,6 +68,8 @@ let state: PodcastsState = {
 const listeners = new Set<() => void>();
 let loading: Promise<void> | undefined;
 let refreshing: Promise<void> | undefined;
+/** Shows moved during a refresh, whose new feeds the next one loads */
+let refreshAgain = false;
 
 /** The feeds, as stored and then loaded again when they got old */
 export function usePodcasts(): PodcastsState {
@@ -88,6 +103,10 @@ function update(patch: Partial<PodcastsState>) {
 export function refreshFeeds(force: boolean): Promise<void> {
   refreshing ??= refreshNow(force).finally(() => {
     refreshing = undefined;
+    if (refreshAgain) {
+      refreshAgain = false;
+      void refreshFeeds(false);
+    }
   });
   return refreshing;
 }
@@ -113,7 +132,8 @@ async function refreshNow(force: boolean) {
   }
   update({ feeds, needsAccess, errors });
   if (stale.length === 0) {
-    update({ status: summary(shows.length) });
+    await followMoves();
+    update({ status: summary((await getShows()).length) });
     return;
   }
 
@@ -139,7 +159,47 @@ async function refreshNow(force: boolean) {
     update({ errors: { ...errors }, status: `Updating ${++done} of ${stale.length}…` });
   });
   await feedsItem.setValue(state.feeds);
-  update({ isRefreshing: false, status: summary(shows.length) });
+  await followMoves();
+  update({ isRefreshing: false, status: summary((await getShows()).length) });
+}
+
+/**
+ * Follows the shows whose feeds announced a move at their new addresses,
+ * with their progress, once yt3k may read those: until the user allows it,
+ * they keep loading from the old ones, which hosts keep serving a while.
+ */
+async function followMoves() {
+  const { shows, deleted } = await getSyncedShows();
+  const followed = new Set(shows.map((s) => s.feedUrl));
+  const movesNeedAccess: PodcastsState['movesNeedAccess'] = {};
+  let isMoved = false;
+  for (const show of shows) {
+    const feed = state.feeds[show.feedUrl]?.feed;
+    const target = movedFeedUrl(show.feedUrl, feed?.newFeedUrl);
+    // Not back to an address left, as two feeds naming each other would
+    if (!feed || !target || deleted[target] !== undefined) continue;
+    if (!followed.has(target) && !(await mayRead(target))) {
+      movesNeedAccess[show.feedUrl] = target;
+      continue;
+    }
+    await moveShow(show.feedUrl, {
+      feedUrl: target,
+      title: feed.title,
+      ...((feed.image ?? show.image) && { image: feed.image ?? show.image }),
+    });
+    await moveProgress(show.feedUrl, target);
+    // The old feed's episodes show until the new one, loaded next, replaces them.
+    const { [show.feedUrl]: old, ...feeds } = state.feeds;
+    if (old && !followed.has(target)) feeds[target] = { ...old, fetchedAt: 0, validators: {} };
+    update({ feeds });
+    followed.add(target);
+    isMoved = true;
+  }
+  update({ movesNeedAccess });
+  if (isMoved) {
+    await feedsItem.setValue(state.feeds);
+    refreshAgain = true;
+  }
 }
 
 function summary(shows: number) {
@@ -214,7 +274,8 @@ export function searchPodcasts(input: string): Promise<DirectoryPodcast[]> {
  * Like followPodcast, call it right on the user's click.
  */
 export function allowReadingFeeds(): Promise<void> {
-  const origins = [...new Set(state.needsAccess.map(feedOrigin))];
+  const feeds = [...state.needsAccess, ...Object.values(state.movesNeedAccess)];
+  const origins = [...new Set(feeds.flatMap((url) => (url ? [feedOrigin(url)] : [])))];
   const granted = browser.permissions.request({ origins });
   return (async () => {
     await granted;

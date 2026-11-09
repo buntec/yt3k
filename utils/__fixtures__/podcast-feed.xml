@@ -5,6 +5,7 @@
     <link>https://example.com/show</link>
     <description><![CDATA[<p>A made-up show.</p>]]></description>
     <itunes:author>Example Media</itunes:author>
+    <itunes:new-feed-url>https://feeds.example.net/show-and-tell.xml</itunes:new-feed-url>
     <itunes:image href="https://example.com/art/show.jpg"/>
     <image>
       <url>https://example.com/art/fallback.jpg</url>

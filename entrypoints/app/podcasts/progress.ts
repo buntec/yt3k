@@ -77,6 +77,28 @@ async function set(key: string, value: Omit<Progress, 'at'> | undefined) {
   await progressItem.setValue(next);
 }
 
+/**
+ * Keeps the progress of a show's episodes when it moves to another feed,
+ * whose episodes keep their IDs, as podcast hosts keep them in a move.
+ */
+export async function moveProgress(fromFeedUrl: string, toFeedUrl: string) {
+  await load();
+  const prefix = episodeKey(fromFeedUrl, '');
+  let isMoved = false;
+  const next: ProgressMap = { ...progress };
+  for (const [key, value] of Object.entries(progress)) {
+    if (!key.startsWith(prefix)) continue;
+    const moved = episodeKey(toFeedUrl, key.slice(prefix.length));
+    // Unless the episode has progress at the new address already
+    if (!next[moved]) next[moved] = value;
+    delete next[key];
+    isMoved = true;
+  }
+  if (!isMoved) return;
+  publish(next);
+  await progressItem.setValue(next);
+}
+
 /** Keeps where playback is, counting it as played near the end. */
 export function savePosition(key: string, position: number, duration: number | undefined) {
   const isPlayed = duration !== undefined && duration > 0 && position >= duration - END_MARGIN;

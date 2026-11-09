@@ -26,10 +26,12 @@ It has these tabs:
   Find podcasts by name in Apple's podcast directory, or paste the address of a
   feed or an Apple Podcasts link, or import the OPML file other podcast apps export
   (and export one for them). Episodes play here, at the speed you choose, and
-  pick up where you left off. Searching asks the browser to let yt3k use the
-  directory the first time, and following a podcast to let it read feeds from its
-  site. The podcasts you follow sync through Google Drive along with the groups,
-  while what you played stays in each browser.
+  pick up where you left off, with the keyboard's and headphones' media keys
+  working as in other players. A podcast that moves to a new feed is followed
+  there. Searching asks the browser to let yt3k use the directory the first
+  time, and following a podcast to let it read feeds from its site. The podcasts
+  you follow sync through Google Drive along with the groups, while what you
+  played stays in each browser.
 
 Every tab has a search bar (press `/`), and any video can be saved to or removed
 from Watch later. Videos play in an embedded player that can be minimized into a

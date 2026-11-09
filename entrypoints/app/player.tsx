@@ -359,6 +359,8 @@ function EpisodeMedia({
     };
   }, [episode, start]);
 
+  useMediaSession(mediaRef, episode);
+
   // Clicked to play, so it starts on its own, unlike YouTube's videos: no
   // watch history to keep it out of.
   const props = {
@@ -374,7 +376,13 @@ function EpisodeMedia({
   };
 
   if (!isAudio) {
-    return <video ref={mediaRef as React.RefObject<HTMLVideoElement>} className="player-frame" {...props} />;
+    return (
+      <video
+        ref={mediaRef as React.RefObject<HTMLVideoElement>}
+        className="player-frame"
+        {...props}
+      />
+    );
   }
   return (
     <HStack gap={4} vAlign="center">
@@ -382,11 +390,99 @@ function EpisodeMedia({
       <StackItem size="fill">
         <VStack gap={2}>
           <Text type="supporting">{episode.showTitle}</Text>
-          <audio ref={mediaRef as React.RefObject<HTMLAudioElement>} className="player-audio" {...props} />
+          <audio
+            ref={mediaRef as React.RefObject<HTMLAudioElement>}
+            className="player-audio"
+            {...props}
+          />
         </VStack>
       </StackItem>
     </HStack>
   );
+}
+
+/** Seconds the skip back and forward keys of headphones and keyboards skip by default */
+const SKIP_BACK = 15;
+const SKIP_FORWARD = 30;
+
+/**
+ * Tells the system what's playing, so the media keys of keyboards and
+ * headphones work, and its own media controls show the episode, with its
+ * artwork, and where it is. YouTube's player does the same for videos.
+ */
+function useMediaSession(
+  mediaRef: React.RefObject<HTMLMediaElement | null>,
+  episode: PlayableEpisode,
+) {
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return;
+    const media = mediaRef.current!;
+    const session = navigator.mediaSession;
+    session.metadata = new MediaMetadata({
+      title: episode.title,
+      artist: episode.showTitle,
+      artwork: episode.image ? [{ src: episode.image }] : [],
+    });
+
+    const seekTo = (seconds: number) => {
+      const end = Number.isFinite(media.duration) ? media.duration : Infinity;
+      media.currentTime = Math.max(0, Math.min(seconds, end));
+    };
+    const handlers: [MediaSessionAction, MediaSessionActionHandler][] = [
+      ['play', () => void media.play()],
+      ['pause', () => media.pause()],
+      ['stop', () => media.pause()],
+      ['seekbackward', ({ seekOffset }) => seekTo(media.currentTime - (seekOffset ?? SKIP_BACK))],
+      ['seekforward', ({ seekOffset }) => seekTo(media.currentTime + (seekOffset ?? SKIP_FORWARD))],
+      ['seekto', ({ seekTime }) => seekTime !== undefined && seekTo(seekTime)],
+    ];
+    for (const [action, handler] of handlers) setActionHandler(session, action, handler);
+
+    const showPosition = () => {
+      if (!Number.isFinite(media.duration)) return;
+      try {
+        session.setPositionState({
+          duration: media.duration,
+          playbackRate: media.playbackRate,
+          position: Math.min(media.currentTime, media.duration),
+        });
+      } catch (err) {
+        console.warn(err);
+      }
+    };
+    const onPlaying = () => {
+      session.playbackState = 'playing';
+      showPosition();
+    };
+    const onPause = () => {
+      session.playbackState = 'paused';
+      showPosition();
+    };
+    // The system moves the position on as it plays; it needs telling of jumps.
+    const events = ['loadedmetadata', 'seeked', 'ratechange'] as const;
+    for (const event of events) media.addEventListener(event, showPosition);
+    media.addEventListener('playing', onPlaying);
+    media.addEventListener('pause', onPause);
+    return () => {
+      for (const event of events) media.removeEventListener(event, showPosition);
+      media.removeEventListener('playing', onPlaying);
+      media.removeEventListener('pause', onPause);
+      for (const [action] of handlers) setActionHandler(session, action, null);
+      session.metadata = null;
+      session.playbackState = 'none';
+    };
+  }, [mediaRef, episode]);
+}
+
+/** Sets the handler, unless the browser doesn't know the action, which throws */
+function setActionHandler(
+  session: MediaSession,
+  action: MediaSessionAction,
+  handler: MediaSessionActionHandler | null,
+) {
+  try {
+    session.setActionHandler(action, handler);
+  } catch {}
 }
 
 /** The playback speed of episodes, which every episode keeps */

@@ -80,7 +80,8 @@ interface ListedEpisode {
 /** The newest episodes of the podcasts followed, from their RSS feeds */
 export function PodcastsPage() {
   const { shows, isLoaded } = useShows();
-  const { feeds, needsAccess, errors, isRefreshing, status } = usePodcasts();
+  const { feeds, needsAccess, movesNeedAccess, errors, isRefreshing, status } = usePodcasts();
+  const waiting = needsAccess.length + Object.keys(movesNeedAccess).length;
   const progress = useProgress();
   const [storedFilter, setStoredFilter] = useState<ShowFilter>(readFilter);
   // A show unfollowed meanwhile, e.g. in another browser, leaves all shown
@@ -174,15 +175,15 @@ export function PodcastsPage() {
       content={
         <LayoutContent padding={6}>
           <VStack gap={6} maxWidth={1000}>
-            {needsAccess.length > 0 && (
+            {waiting > 0 && (
               <Banner
                 status="warning"
                 title={
-                  needsAccess.length === 1
+                  waiting === 1
                     ? 'A podcast needs your permission'
-                    : `${needsAccess.length} podcasts need your permission`
+                    : `${waiting} podcasts need your permission`
                 }
-                description="Imported, or followed in another browser, they need your permission for yt3k to read their feeds here."
+                description="Imported, followed in another browser, or moved to a new address, they need your permission for yt3k to read their feeds here."
                 endContent={<Button label="Allow" size="sm" clickAction={allowReadingFeeds} />}
               />
             )}

@@ -5,6 +5,11 @@ export interface PodcastFeed {
   image?: string;
   /** The show's web page */
   link?: string;
+  /**
+   * Where the feed says it moved, as podcast hosts announce a move to
+   * another: apps are to follow the show there. Many feeds name themselves.
+   */
+  newFeedUrl?: string;
   /** Newest first, at most MAX_EPISODES */
   episodes: Episode[];
 }
@@ -53,6 +58,20 @@ export function normalizeFeedUrl(input: string): string {
   }
   url.hash = '';
   return url.href;
+}
+
+/**
+ * The address the show moved to, if its feed at `feedUrl` announced one that
+ * isn't where it is already.
+ */
+export function movedFeedUrl(feedUrl: string, newFeedUrl: string | undefined) {
+  if (!newFeedUrl) return undefined;
+  try {
+    const target = normalizeFeedUrl(newFeedUrl);
+    return target === feedUrl ? undefined : target;
+  } catch {
+    return undefined;
+  }
 }
 
 /** The match pattern of the site a feed is on, for the permission to read it */
@@ -121,6 +140,7 @@ export function parseFeed(xml: string): PodcastFeed {
     author: text(channel, 'itunes:author'),
     image: attribute(channel, 'itunes:image', 'href') ?? text(child(channel, 'image'), 'url'),
     link: text(channel, 'link'),
+    newFeedUrl: text(channel, 'itunes:new-feed-url'),
     episodes,
   };
 }

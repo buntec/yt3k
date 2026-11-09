@@ -7,6 +7,7 @@ import {
   MAX_EPISODES,
   NotAFeedError,
   feedOrigin,
+  movedFeedUrl,
   normalizeFeedUrl,
   parseDuration,
   parseFeed,
@@ -20,6 +21,7 @@ describe('parseFeed', () => {
       author: 'Example Media',
       image: 'https://example.com/art/show.jpg',
       link: 'https://example.com/show',
+      newFeedUrl: 'https://feeds.example.net/show-and-tell.xml',
     });
   });
 
@@ -129,6 +131,23 @@ describe('normalizeFeedUrl', () => {
     expect(() => normalizeFeedUrl('')).toThrow(NotAFeedError);
     expect(() => normalizeFeedUrl('ftp://example.com/feed')).toThrow(NotAFeedError);
     expect(() => normalizeFeedUrl('javascript:alert(1)')).toThrow(NotAFeedError);
+  });
+});
+
+describe('movedFeedUrl', () => {
+  const here = 'https://example.com/feed.xml';
+
+  it('is the address a feed announced it moved to', () => {
+    expect(movedFeedUrl(here, ' https://feeds.example.net/new.xml ')).toBe(
+      'https://feeds.example.net/new.xml',
+    );
+  });
+
+  it("is nothing for a feed naming itself, as many do, or an address that can't be one", () => {
+    expect(movedFeedUrl(here, undefined)).toBeUndefined();
+    expect(movedFeedUrl(here, here)).toBeUndefined();
+    expect(movedFeedUrl(here, 'example.com/feed.xml')).toBeUndefined();
+    expect(movedFeedUrl(here, 'ftp://example.com/feed.xml')).toBeUndefined();
   });
 });
 

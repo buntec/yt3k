@@ -132,6 +132,27 @@ export async function removeShows(feedUrls: string[]) {
   notifyChanged();
 }
 
+/**
+ * Follows the show at its new address instead, as one change, so other
+ * devices follow it there too. Its removal from the old address keeps a
+ * show moving back from coming back.
+ */
+export async function moveShow(feedUrl: string, to: Omit<Show, 'updatedAt'>) {
+  await write((current) => {
+    const old = current.shows.find((s) => s.feedUrl === feedUrl);
+    if (!old) return current;
+    const now = Date.now();
+    const deleted = { ...current.deleted, [feedUrl]: Math.max(now, old.updatedAt) };
+    const shows = current.shows.filter((s) => s !== old);
+    if (!shows.some((s) => s.feedUrl === to.feedUrl)) {
+      shows.push({ ...to, updatedAt: Math.max(now, (deleted[to.feedUrl] ?? -1) + 1) });
+      delete deleted[to.feedUrl];
+    }
+    return { shows, deleted: pruneDeletions(deleted, now) };
+  });
+  notifyChanged();
+}
+
 function notifyChanged() {
   for (const listener of changeListeners) listener();
 }
