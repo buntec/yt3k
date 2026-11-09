@@ -458,29 +458,33 @@ function VideoLink({ video, channelId }: { video: Video; channelId: string }) {
               />
             ) : null}
           </div>
-          <VStack gap={1}>
-            <span className="video-title">
-              <Text weight="medium" size="sm" maxLines={3} hasTruncateTooltip={false}>
-                {video.title}
-              </Text>
-            </span>
-            <HStack gap={1} vAlign="center" wrap="wrap">
-              {video.views !== undefined && (
-                <>
-                  {/* Like the view counts on Feed */}
-                  <Text type="supporting">
-                    <span className="detail" aria-hidden>
-                      <Icon icon={Play} size="xsm" />
-                      {compactNumber.format(video.views)}
-                    </span>
-                    <VisuallyHidden>{`${video.views.toLocaleString()} views`}</VisuallyHidden>
-                  </Text>
-                  <Text type="supporting">·</Text>
-                </>
-              )}
-              <Age published={video.published} />
-            </HStack>
-          </VStack>
+          {/* Can shrink below its content's width, so a title without spaces
+              wraps rather than widening the page */}
+          <StackItem size="fill">
+            <VStack gap={1}>
+              <span className="video-title">
+                <Text weight="medium" size="sm" maxLines={3} hasTruncateTooltip={false}>
+                  {video.title}
+                </Text>
+              </span>
+              <HStack gap={1} vAlign="center" wrap="wrap">
+                {video.views !== undefined && (
+                  <>
+                    {/* Like the view counts on Feed */}
+                    <Text type="supporting">
+                      <span className="detail" aria-hidden>
+                        <Icon icon={Play} size="xsm" />
+                        {compactNumber.format(video.views)}
+                      </span>
+                      <VisuallyHidden>{`${video.views.toLocaleString()} views`}</VisuallyHidden>
+                    </Text>
+                    <Text type="supporting">·</Text>
+                  </>
+                )}
+                <Age published={video.published} />
+              </HStack>
+            </VStack>
+          </StackItem>
         </HStack>
       </PlayableLink>
       {/* Next to the link rather than in it, which can't hold a button. The
