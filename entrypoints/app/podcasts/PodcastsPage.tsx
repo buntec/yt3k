@@ -34,6 +34,7 @@ import { TextInput } from '@astryxdesign/core/TextInput';
 import { useToast } from '@astryxdesign/core/Toast';
 import { type Episode, normalizeFeedUrl } from '@/utils/podcast';
 import { type DirectoryPodcast, applePodcastId, isAddress } from '@/utils/podcastDirectory';
+import { useArtwork } from '../artwork';
 import { type PlayableEpisode, usePlayEpisode } from '../player';
 import { foldForSearch, useSearchShortcut } from '../search';
 import {
@@ -74,8 +75,8 @@ interface ListedEpisode {
   key: string;
   show: Show;
   showTitle: string;
-  /** The episode's artwork, else the show's */
-  image?: string;
+  /** Artwork to show, best first: the episode's, else the show's */
+  images: string[];
 }
 
 /** The newest episodes of the podcasts followed, from their RSS feeds */
@@ -236,7 +237,9 @@ function listEpisodes(shows: Show[], feeds: Feeds, filter: ShowFilter): ListedEp
         key: episodeKey(show.feedUrl, episode.id),
         show,
         showTitle: feed.title,
-        image: episode.image ?? feed.image ?? show.image,
+        images: [
+          ...new Set([episode.image, feed.image, show.image].filter((i) => i !== undefined)),
+        ],
       }));
     })
     .sort((a, b) => (b.episode.published ?? '').localeCompare(a.episode.published ?? ''));
@@ -251,7 +254,8 @@ const EpisodeRow = memo(function EpisodeRow({
   progress?: Progress;
 }) {
   const playEpisode = usePlayEpisode();
-  const { episode, key, showTitle, image } = item;
+  const { episode, key, showTitle, images } = item;
+  const [image, onImageError] = useArtwork(images);
   const duration = progress?.duration ?? episode.duration;
   const position = progress?.isPlayed ? 0 : (progress?.position ?? 0);
   const details = [
@@ -272,7 +276,7 @@ const EpisodeRow = memo(function EpisodeRow({
       mediaUrl: episode.mediaUrl,
       mediaType: episode.mediaType,
       duration: episode.duration,
-      image,
+      images,
       link: episode.link,
     };
     playEpisode(playable);
@@ -311,7 +315,13 @@ const EpisodeRow = memo(function EpisodeRow({
       startContent={
         image ? (
           <Overlay showOn="hover" align="center" content={playButton}>
-            <img className="episode-thumbnail" src={image} alt="" loading="lazy" />
+            <img
+              className="episode-thumbnail"
+              src={image}
+              alt=""
+              loading="lazy"
+              onError={onImageError}
+            />
           </Overlay>
         ) : (
           playButton

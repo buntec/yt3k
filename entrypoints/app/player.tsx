@@ -10,6 +10,7 @@ import { Text } from '@astryxdesign/core/Text';
 import { VStack } from '@astryxdesign/core/VStack';
 import { extensionHost } from '@/utils/extension';
 import type { Video } from '@/utils/youtube';
+import { useArtwork } from './artwork';
 import { useAutoplay } from './autoplay';
 import { getProgress, savePosition } from './podcasts/progress';
 import { SPEEDS, type Speed, setSpeed, useSpeed } from './podcasts/speed';
@@ -27,7 +28,8 @@ export interface PlayableEpisode {
   mediaType?: string;
   /** Length in seconds, as the feed tells it */
   duration?: number;
-  image?: string;
+  /** Artwork to show, best first */
+  images: string[];
   /** The episode's web page */
   link?: string;
 }
@@ -366,7 +368,8 @@ function EpisodeMedia({
     };
   }, [episode, start]);
 
-  useMediaSession(mediaRef, episode);
+  const [image, onImageError] = useArtwork(episode.images);
+  useMediaSession(mediaRef, episode, image);
 
   // Clicked to play, so it starts on its own, unlike YouTube's videos: no
   // watch history to keep it out of.
@@ -393,7 +396,7 @@ function EpisodeMedia({
   }
   return (
     <HStack gap={4} vAlign="center">
-      {episode.image && <img className="episode-art" src={episode.image} alt="" />}
+      {image && <img className="episode-art" src={image} alt="" onError={onImageError} />}
       <StackItem size="fill">
         <VStack gap={2}>
           <Text type="supporting">{episode.showTitle}</Text>
@@ -420,16 +423,25 @@ const SKIP_FORWARD = 30;
 function useMediaSession(
   mediaRef: React.RefObject<HTMLMediaElement | null>,
   episode: PlayableEpisode,
+  image: string | undefined,
 ) {
+  // Apart from the rest: the artwork can change while it plays, if one fails to load
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return;
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: episode.title,
+      artist: episode.showTitle,
+      artwork: image ? [{ src: image }] : [],
+    });
+    return () => {
+      navigator.mediaSession.metadata = null;
+    };
+  }, [episode, image]);
+
   useEffect(() => {
     if (!('mediaSession' in navigator)) return;
     const media = mediaRef.current!;
     const session = navigator.mediaSession;
-    session.metadata = new MediaMetadata({
-      title: episode.title,
-      artist: episode.showTitle,
-      artwork: episode.image ? [{ src: episode.image }] : [],
-    });
 
     const seekTo = (seconds: number) => {
       const end = Number.isFinite(media.duration) ? media.duration : Infinity;
@@ -475,7 +487,6 @@ function useMediaSession(
       media.removeEventListener('playing', onPlaying);
       media.removeEventListener('pause', onPause);
       for (const [action] of handlers) setActionHandler(session, action, null);
-      session.metadata = null;
       session.playbackState = 'none';
     };
   }, [mediaRef, episode]);
