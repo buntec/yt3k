@@ -21,6 +21,17 @@ It has these tabs:
 - **Watch later**: your Watch later playlist.
 - **History**: the videos you watched, by day, without Shorts. Videos can be
   removed from it.
+- **Podcasts**: the newest episodes of podcasts you follow by their RSS feeds,
+  which needn't be on YouTube, and can be filtered by podcast in the sidebar.
+  Find podcasts by name in Apple's podcast directory, or paste the address of a
+  feed or an Apple Podcasts link, or import the OPML file other podcast apps export
+  (and export one for them). Episodes play here, at the speed you choose, and
+  pick up where you left off, with the keyboard's and headphones' media keys
+  working as in other players. A podcast that moves to a new feed is followed
+  there. Searching asks the browser to let yt3k use the directory the first
+  time, and following a podcast to let it read feeds from its site. The podcasts
+  you follow sync through Google Drive along with the groups, while what you
+  played stays in each browser.
 
 Every tab has a search bar (press `/`), and any video can be saved to or removed
 from Watch later. Videos play in an embedded player that can be minimized into a
@@ -35,8 +46,11 @@ Google. It uses YouTube's internal web API, the one youtube.com itself uses,
 which isn't documented and may change at any time, so parts of yt3k can stop
 working until it's updated. Actions like unsubscribing or **Not interested**
 apply to your YouTube account as if you'd done them on youtube.com. yt3k sends
-your data only to YouTube, and your groups to your own Google Drive if you turn on
-sync, and collects nothing itself. Use it at your own risk.
+your data only to YouTube, and your groups and podcasts to your own Google Drive
+if you turn on sync, and collects nothing itself. To show and play podcasts, it
+loads their feeds and episodes from the sites that host them, like any podcast
+app, and sends what you search for to Apple's podcast directory. Use it at your
+own risk.
 
 ## Install
 
@@ -88,8 +102,13 @@ there.
 
 ## Google Drive sync
 
-Groups sync through a file in the hidden app data folder of the user's Google Drive
-(scope `drive.appdata`, which sees nothing else in Drive). Each browser keeps all
+Groups and the podcasts followed sync through a file in the hidden app data folder
+of the user's Google Drive (scope `drive.appdata`, which sees nothing else in Drive).
+A podcast removed on one device is removed on the others like a deleted group, and
+one followed again after that comes back. A browser that gets a podcast from
+another one needs the permission to read its feed's site too, which the Podcasts tab
+asks for. The file's format changed when podcasts were added: older versions of yt3k
+stop syncing until they're updated, rather than drop the podcasts. Each browser keeps all
 groups and merges its copy with the file: of a group changed on two devices, the
 last change wins, and deletions are remembered for a year so they reach the other
 devices. Groups of the same name made on two devices before they synced become one.

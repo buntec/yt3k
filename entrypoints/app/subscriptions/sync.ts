@@ -1,4 +1,10 @@
 import {
+  type SyncedShows,
+  canonicalShows,
+  mergeShows,
+  readShows,
+} from '../podcasts/shows';
+import {
   type AbsorbedGroup,
   type Deletions,
   type Group,
@@ -8,38 +14,55 @@ import {
 } from './groups';
 
 /*
- * How groups merge between devices. Each device keeps all groups and syncs by
+ * How groups, and the podcasts followed, merge between devices. Each device keeps all groups and syncs by
  * merging its copy with the stored one, so a change lost to a device writing
  * at the same time is put back by the next sync of the device that made it.
  */
 
 const FORMAT_PREFIX = 'yt3k-sync-';
-const FORMAT_VERSION = 1;
+// Version 2 adds the podcasts. Version 1 files, which have none, still read.
+const FORMAT_VERSION = 2;
 
-/** The synced groups saved by a later version of yt3k, which this one can't read */
+/** The synced data saved by a later version of yt3k, which this one can't read */
 export class NewerFormatError extends Error {}
+
+/** Everything synced: the groups and the podcasts followed */
+export interface SyncData {
+  groups: Synced;
+  shows: SyncedShows;
+}
 
 /** What's stored where devices sync: all of each group, IDs included */
 interface SyncFile {
   format: string;
   groups: Group[];
   deleted: Deletions;
+  podcasts: SyncedShows['shows'];
+  /** When each podcast removed was, by feed URL */
+  podcastsDeleted: Deletions;
 }
 
-/** The groups and deletions as the file stored for syncing */
-export function serializeSynced(synced: Synced): string {
-  const file: SyncFile = { format: FORMAT_PREFIX + FORMAT_VERSION, ...canonical(synced) };
+/** Everything synced, as the file stored for syncing */
+export function serializeSyncData(data: SyncData): string {
+  const groups = canonical(data.groups);
+  const shows = canonicalShows(data.shows);
+  const file: SyncFile = {
+    format: FORMAT_PREFIX + FORMAT_VERSION,
+    ...groups,
+    podcasts: shows.shows,
+    podcastsDeleted: shows.deleted,
+  };
   return JSON.stringify(file);
 }
 
-/** The groups and deletions in a file saved by serializeSynced. Throws if it isn't one. */
-export function parseSynced(text: string): Synced {
+/** Everything synced in a file saved by serializeSyncData. Throws if it isn't one. */
+export function parseSyncData(text: string): SyncData {
   const file = JSON.parse(text) as Partial<SyncFile> | null;
   const version = file?.format?.startsWith(FORMAT_PREFIX)
     ? Number(file.format.slice(FORMAT_PREFIX.length))
     : NaN;
   if (version > FORMAT_VERSION) throw new NewerFormatError(file!.format);
-  if (version !== FORMAT_VERSION || !Array.isArray(file!.groups)) {
+  if (!(version >= 1) || !Number.isInteger(version) || !Array.isArray(file!.groups)) {
     throw new Error('Not a sync file');
   }
   const groups = file!.groups.flatMap((g): Group[] => {
@@ -58,7 +81,23 @@ export function parseSynced(text: string): Synced {
   const deleted = Object.fromEntries(
     Object.entries(file!.deleted ?? {}).filter(([, at]) => typeof at === 'number'),
   );
-  return { groups, deleted };
+  return { groups: { groups, deleted }, shows: readShows(file!.podcasts, file!.podcastsDeleted) };
+}
+
+/** Both merged, the groups and the podcasts each their own way */
+export function mergeSyncData(a: SyncData, b: SyncData, now: number): SyncData {
+  return {
+    groups: mergeSynced(a.groups, b.groups, now),
+    shows: mergeShows(a.shows, b.shows, now),
+  };
+}
+
+/** Whether both hold the same, whatever their order */
+export function sameSyncData(a: SyncData, b: SyncData): boolean {
+  return (
+    sameSynced(a.groups, b.groups) &&
+    JSON.stringify(canonicalShows(a.shows)) === JSON.stringify(canonicalShows(b.shows))
+  );
 }
 
 function readAbsorbed(value: unknown): Group['absorbed'] {

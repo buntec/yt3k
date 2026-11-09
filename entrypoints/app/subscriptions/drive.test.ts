@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { connectDrive, disconnectDrive, reconnectDrive, syncNow } from './drive';
+import { addShow, getSyncedShows } from '../podcasts/shows';
 import { type Group, getSynced } from './groups';
-import { parseSynced, serializeSynced } from './sync';
+import { parseSyncData, serializeSyncData } from './sync';
 
 const music: Group = { id: 'a', name: 'Music', color: 'red', channelIds: ['UC1'], updatedAt: 1 };
 const news: Group = { id: 'b', name: 'News', color: 'blue', channelIds: ['UC2'], updatedAt: 1 };
@@ -58,7 +59,12 @@ function mockDrive(
       if (method === 'GET') {
         const { content } = file;
         return new Response(
-          typeof content === 'string' ? content : serializeSynced({ groups: content, deleted: {} }),
+          typeof content === 'string'
+            ? content
+            : serializeSyncData({
+                groups: { groups: content, deleted: {} },
+                shows: { shows: [], deleted: {} },
+              }),
         );
       }
       if (method === 'PATCH') return Response.json({ version: file.version + '+' });
@@ -147,8 +153,25 @@ describe('syncNow', () => {
     const requests = mockDrive([{ id: 'broken', version: '1', content: '' }]);
     await syncNow();
     const patch = requests.find((r) => r.method === 'PATCH');
-    expect(parseSynced(patch!.body!)).toEqual(await getSynced());
+    expect(parseSyncData(patch!.body!).groups).toEqual(await getSynced());
     expect((await settings())?.syncedAt).toBeDefined();
+  });
+
+  it('merges the podcasts followed here with those followed elsewhere', async () => {
+    const here = 'https://example.com/here.xml';
+    const there = { feedUrl: 'https://example.org/there.xml', title: 'There', updatedAt: 1 };
+    await addShow({ feedUrl: here, title: 'Here' });
+    const content = serializeSyncData({
+      groups: { groups: [music], deleted: {} },
+      shows: { shows: [there], deleted: {} },
+    });
+    const requests = mockDrive([{ id: 'file', version: '1', content }]);
+    await syncNow();
+    expect((await getSyncedShows()).shows.map((s) => s.feedUrl)).toEqual([here, there.feedUrl]);
+    const patch = requests.find((r) => r.method === 'PATCH');
+    const uploaded = parseSyncData(patch!.body!);
+    expect(uploaded.shows.shows.map((s) => s.feedUrl)).toEqual([here, there.feedUrl]);
+    expect(uploaded.groups.groups.map((g) => g.id)).toContain('a');
   });
 
   it("doesn't renew the token for another account", async () => {
