@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import { getShows, movedFeeds } from './shows';
 
 /** How far the user got into an episode */
 export interface Progress {
@@ -43,8 +44,9 @@ export function useProgress(): ProgressMap {
 
 /** An episode's progress, once loaded */
 export async function getProgress(key: string): Promise<Progress | undefined> {
+  const moved = await currentKey(key);
   await load();
-  return progress[key];
+  return progress[moved];
 }
 
 function load(): Promise<void> {
@@ -68,45 +70,82 @@ function publish(value: ProgressMap) {
   for (const listener of listeners) listener();
 }
 
-async function set(key: string, value: Omit<Progress, 'at'> | undefined) {
+/** Held to change the progress, so tabs saving at once don't lose each other's */
+const LOCK = 'yt3k-podcast-progress';
+
+/** Replaces the stored progress with what `change` makes of it as it is now, unless undefined. */
+async function write(change: (current: ProgressMap) => ProgressMap | undefined) {
   await load();
-  const now = Date.now();
-  const kept = Object.entries(progress).filter(([k, p]) => k !== key && now - p!.at < MAX_AGE);
-  const next = Object.fromEntries(value ? [...kept, [key, { ...value, at: now }]] : kept);
-  publish(next);
-  await progressItem.setValue(next);
+  await navigator.locks.request(LOCK, async () => {
+    const next = change(await progressItem.getValue());
+    if (!next) return;
+    publish(next);
+    await progressItem.setValue(next);
+  });
+}
+
+/** The key of the episode at the address its show moved to, if it moved */
+function movedKey(key: string, moves: Map<string, string>): string {
+  // Feed URLs have no spaces, which URLs encode.
+  const space = key.indexOf(' ');
+  const to = moves.get(key.slice(0, space));
+  return to ? episodeKey(to, key.slice(space + 1)) : key;
 }
 
 /**
- * Keeps the progress of a show's episodes when it moves to another feed,
- * whose episodes keep their IDs, as podcast hosts keep them in a move.
+ * The key an episode's progress is kept under now: at its show's new address
+ * once it moved, e.g. for a player still playing it from the old one.
  */
-export async function moveProgress(fromFeedUrl: string, toFeedUrl: string) {
-  await load();
-  const prefix = episodeKey(fromFeedUrl, '');
-  let isMoved = false;
-  const next: ProgressMap = { ...progress };
-  for (const [key, value] of Object.entries(progress)) {
-    if (!key.startsWith(prefix)) continue;
-    const moved = episodeKey(toFeedUrl, key.slice(prefix.length));
-    // Unless the episode has progress at the new address already
-    if (!next[moved]) next[moved] = value;
-    delete next[key];
-    isMoved = true;
-  }
-  if (!isMoved) return;
-  publish(next);
-  await progressItem.setValue(next);
+async function currentKey(key: string): Promise<string> {
+  return movedKey(key, movedFeeds(await getShows()));
+}
+
+async function set(
+  key: string,
+  change: (current: Progress | undefined) => Omit<Progress, 'at'> | undefined,
+) {
+  const moved = await currentKey(key);
+  await write((current) => {
+    const now = Date.now();
+    const value = change(current[moved]);
+    const kept = Object.entries(current).filter(([k, p]) => k !== moved && now - p!.at < MAX_AGE);
+    return Object.fromEntries(value ? [...kept, [moved, { ...value, at: now }]] : kept);
+  });
+}
+
+/**
+ * Keeps the progress of shows' episodes when they move to other feeds, whose
+ * episodes keep their IDs, as podcast hosts keep them in a move: those moved
+ * here, in `moves`, and those whose moves synced from elsewhere. Of an
+ * episode with progress at both addresses, the newest stays.
+ */
+export async function moveProgress(moves: Iterable<[from: string, to: string]> = []) {
+  const all = new Map([...movedFeeds(await getShows()), ...moves]);
+  if (all.size === 0) return;
+  await write((current) => {
+    let isMoved = false;
+    const next: ProgressMap = { ...current };
+    for (const [key, value] of Object.entries(current)) {
+      const moved = movedKey(key, all);
+      if (moved === key) continue;
+      const there = next[moved];
+      if (!there || there.at < value!.at) next[moved] = value;
+      delete next[key];
+      isMoved = true;
+    }
+    return isMoved ? next : undefined;
+  });
 }
 
 /** Keeps where playback is, counting it as played near the end. */
 export function savePosition(key: string, position: number, duration: number | undefined) {
   const isPlayed = duration !== undefined && duration > 0 && position >= duration - END_MARGIN;
-  return set(key, { position: isPlayed ? 0 : position, duration, isPlayed });
+  return set(key, () => ({ position: isPlayed ? 0 : position, duration, isPlayed }));
 }
 
 /** Marks the episode as played, or as not played and back at its start. */
 export function setPlayed(key: string, isPlayed: boolean) {
-  if (!isPlayed) return set(key, undefined);
-  return set(key, { position: 0, duration: progress[key]?.duration, isPlayed });
+  return set(key, (current) =>
+    isPlayed ? { position: 0, duration: current?.duration, isPlayed } : undefined,
+  );
 }

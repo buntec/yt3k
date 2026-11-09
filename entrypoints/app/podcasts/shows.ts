@@ -8,6 +8,11 @@ export interface Show {
   /** As the feed called it when added, to show until the feed is loaded */
   title: string;
   image?: string;
+  /**
+   * The addresses its feed left, oldest first, when it moved: synced, so
+   * each browser can move the progress it keeps of the show's episodes.
+   */
+  movedFrom?: string[];
   /** When it was added, in ms since the epoch, which syncing compares with removals */
   updatedAt: number;
 }
@@ -145,7 +150,8 @@ export async function moveShow(feedUrl: string, to: Omit<Show, 'updatedAt'>) {
     const deleted = { ...current.deleted, [feedUrl]: Math.max(now, old.updatedAt) };
     const shows = current.shows.filter((s) => s !== old);
     if (!shows.some((s) => s.feedUrl === to.feedUrl)) {
-      shows.push({ ...to, updatedAt: Math.max(now, (deleted[to.feedUrl] ?? -1) + 1) });
+      const movedFrom = [...(old.movedFrom ?? []), feedUrl].filter((url) => url !== to.feedUrl);
+      shows.push({ ...to, movedFrom, updatedAt: Math.max(now, (deleted[to.feedUrl] ?? -1) + 1) });
       delete deleted[to.feedUrl];
     }
     return { shows, deleted: pruneDeletions(deleted, now) };
@@ -169,6 +175,21 @@ export async function getSyncedShows(): Promise<SyncedShows> {
  */
 export async function updateSyncedShows(update: (current: SyncedShows) => SyncedShows) {
   await write(update);
+}
+
+/**
+ * Where the shows followed moved from, to where they are now: the addresses
+ * their feeds left that aren't followed again.
+ */
+export function movedFeeds(shows: Show[]): Map<string, string> {
+  const followed = new Set(shows.map((s) => s.feedUrl));
+  const moves = new Map<string, string>();
+  for (const show of shows) {
+    for (const from of show.movedFrom ?? []) {
+      if (!followed.has(from)) moves.set(from, show.feedUrl);
+    }
+  }
+  return moves;
 }
 
 /** Calls `listener` after each change made here, e.g. to sync it. */
@@ -202,7 +223,10 @@ export function mergeShows(a: SyncedShows, b: SyncedShows, now: number): SyncedS
 function isNewer(a: Show, b: Show): boolean {
   // Both devices must pick the same copy whichever each has.
   if (a.updatedAt !== b.updatedAt) return a.updatedAt > b.updatedAt;
-  return JSON.stringify([a.title, a.image]) > JSON.stringify([b.title, b.image]);
+  return (
+    JSON.stringify([a.title, a.image, a.movedFrom]) >
+    JSON.stringify([b.title, b.image, b.movedFrom])
+  );
 }
 
 /** In an order that only depends on the content, so equal content compares equal */
@@ -210,10 +234,11 @@ export function canonicalShows({ shows, deleted }: SyncedShows): SyncedShows {
   return {
     shows: [...shows]
       .sort((a, b) => (a.feedUrl < b.feedUrl ? -1 : 1))
-      .map(({ feedUrl, title, image, updatedAt }) => ({
+      .map(({ feedUrl, title, image, movedFrom, updatedAt }) => ({
         feedUrl,
         title,
         ...(image !== undefined && { image }),
+        ...(movedFrom?.length ? { movedFrom } : {}),
         updatedAt,
       })),
     deleted: Object.fromEntries(Object.entries(deleted).sort(([a], [b]) => (a < b ? -1 : 1))),
@@ -227,11 +252,15 @@ export function readShows(shows: unknown, deletions: unknown): SyncedShows {
     if (typeof s?.feedUrl !== 'string' || !s.feedUrl || typeof s.updatedAt !== 'number') {
       return [];
     }
+    const movedFrom = Array.isArray(s.movedFrom)
+      ? s.movedFrom.filter((url): url is string => typeof url === 'string' && url !== s.feedUrl)
+      : [];
     return [
       {
         feedUrl: s.feedUrl,
         title: typeof s.title === 'string' && s.title ? s.title : s.feedUrl,
         ...(typeof s.image === 'string' && { image: s.image }),
+        ...(movedFrom.length ? { movedFrom } : {}),
         updatedAt: s.updatedAt,
       },
     ];

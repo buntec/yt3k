@@ -335,9 +335,14 @@ function EpisodeMedia({
   useEffect(() => {
     const media = mediaRef.current!;
     let savedAt = 0;
+    // Until the media loaded and went to `start`, its position isn't the user's.
+    let isStarted = false;
+    // Where it was last saved, or started: at 0 there, there's nothing to keep.
+    let saved = start;
     const save = () => {
-      if (media.currentTime === 0) return;
+      if (!isStarted || (media.currentTime === 0 && saved === 0)) return;
       savedAt = Date.now();
+      saved = media.currentTime;
       const duration = Number.isFinite(media.duration) ? media.duration : episode.duration;
       void savePosition(episode.key, media.currentTime, duration);
     };
@@ -346,7 +351,9 @@ function EpisodeMedia({
     };
     const onLoadedMetadata = () => {
       if (start > 0) media.currentTime = start;
+      isStarted = true;
     };
+    if (media.readyState >= HTMLMediaElement.HAVE_METADATA) onLoadedMetadata();
     media.addEventListener('loadedmetadata', onLoadedMetadata);
     media.addEventListener('timeupdate', onTimeUpdate);
     // Ending pauses it too, saving it as played

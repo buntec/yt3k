@@ -24,6 +24,7 @@ import {
   getShows,
   getSyncedShows,
   moveShow,
+  movedFeeds,
   removeShows,
 } from './shows';
 
@@ -68,8 +69,8 @@ let state: PodcastsState = {
 const listeners = new Set<() => void>();
 let loading: Promise<void> | undefined;
 let refreshing: Promise<void> | undefined;
-/** Shows moved during a refresh, whose new feeds the next one loads */
-let refreshAgain = false;
+/** The refresh to run after the one under way, asked for meanwhile */
+let queued: { promise: Promise<void>; force: boolean } | undefined;
 
 /** The feeds, as stored and then loaded again when they got old */
 export function usePodcasts(): PodcastsState {
@@ -97,18 +98,30 @@ function update(patch: Partial<PodcastsState>) {
 
 /**
  * Loads the feeds of the shows followed again: all of them if forced, else
- * those that got old or are new, e.g. from another browser. Joins a refresh
- * under way rather than starting another.
+ * those that got old or are new, e.g. from another browser. During a refresh,
+ * which picked its feeds already, e.g. before a show was followed or a site
+ * allowed, runs another after it, which the calls meanwhile all wait for.
  */
 export function refreshFeeds(force: boolean): Promise<void> {
-  refreshing ??= refreshNow(force).finally(() => {
-    refreshing = undefined;
-    if (refreshAgain) {
-      refreshAgain = false;
-      void refreshFeeds(false);
-    }
-  });
-  return refreshing;
+  if (!refreshing) {
+    refreshing = refreshNow(force).finally(() => {
+      refreshing = undefined;
+    });
+    return refreshing;
+  }
+  if (queued) {
+    queued.force ||= force;
+  } else {
+    const next = { force, promise: Promise.resolve() };
+    next.promise = refreshing
+      .catch(() => {})
+      .then(() => {
+        queued = undefined;
+        return refreshFeeds(next.force);
+      });
+    queued = next;
+  }
+  return queued.promise;
 }
 
 async function refreshNow(force: boolean) {
@@ -172,7 +185,7 @@ async function followMoves() {
   const { shows, deleted } = await getSyncedShows();
   const followed = new Set(shows.map((s) => s.feedUrl));
   const movesNeedAccess: PodcastsState['movesNeedAccess'] = {};
-  let isMoved = false;
+  const moves: [from: string, to: string][] = [];
   for (const show of shows) {
     const feed = state.feeds[show.feedUrl]?.feed;
     const target = movedFeedUrl(show.feedUrl, feed?.newFeedUrl);
@@ -187,18 +200,20 @@ async function followMoves() {
       title: feed.title,
       ...((feed.image ?? show.image) && { image: feed.image ?? show.image }),
     });
-    await moveProgress(show.feedUrl, target);
+    moves.push([show.feedUrl, target]);
     // The old feed's episodes show until the new one, loaded next, replaces them.
     const { [show.feedUrl]: old, ...feeds } = state.feeds;
     if (old && !followed.has(target)) feeds[target] = { ...old, fetchedAt: 0, validators: {} };
     update({ feeds });
     followed.add(target);
-    isMoved = true;
   }
   update({ movesNeedAccess });
-  if (isMoved) {
+  // Those moved in other browsers too, which synced the shows at their new addresses
+  await moveProgress(moves);
+  if (moves.length) {
     await feedsItem.setValue(state.feeds);
-    refreshAgain = true;
+    // Loads the new feeds
+    void refreshFeeds(false);
   }
 }
 
@@ -323,7 +338,9 @@ export interface ImportResult {
  */
 export async function importPodcasts(text: string): Promise<ImportResult> {
   const listed = parseOpml(text);
-  const followed = new Set((await getShows()).map((s) => s.feedUrl));
+  const shows = await getShows();
+  // At the addresses their feeds left too, which other apps may still know
+  const followed = new Set([...shows.map((s) => s.feedUrl), ...movedFeeds(shows).keys()]);
   const toAdd: Omit<Show, 'updatedAt'>[] = [];
   let alreadyFollowed = 0;
   for (const podcast of listed) {
@@ -345,9 +362,10 @@ export async function importPodcasts(text: string): Promise<ImportResult> {
   return { added: toAdd.map((s) => s.feedUrl), alreadyFollowed };
 }
 
-/** Unfollows the shows an import followed, e.g. on Undo. */
-export function undoImport({ added }: ImportResult) {
-  return unfollowPodcasts(added);
+/** Unfollows the shows an import followed, e.g. on Undo, wherever they moved since. */
+export async function undoImport({ added }: ImportResult) {
+  const moves = movedFeeds(await getShows());
+  return unfollowPodcasts(added.map((url) => moves.get(url) ?? url));
 }
 
 /** The podcasts followed as an OPML file, for other podcast apps or a backup */
@@ -362,7 +380,8 @@ export async function exportPodcasts(): Promise<string> {
 
 /** Follows a show again that was just unfollowed, e.g. on Undo. */
 export async function refollowPodcast(show: Show) {
-  await addShow({ feedUrl: show.feedUrl, title: show.title, image: show.image });
+  const { updatedAt: _, ...again } = show;
+  await addShow(again);
   void refreshFeeds(false);
 }
 

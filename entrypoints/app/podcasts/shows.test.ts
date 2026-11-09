@@ -1,6 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import { addShows, getSyncedShows, moveShow, removeShows } from './shows';
+import {
+  addShows,
+  canonicalShows,
+  getSyncedShows,
+  moveShow,
+  movedFeeds,
+  readShows,
+  removeShows,
+} from './shows';
 
 const a = { feedUrl: 'https://example.com/a.xml', title: 'A' };
 const b = { feedUrl: 'https://example.com/b.xml', title: 'B' };
@@ -40,6 +48,27 @@ describe('following and unfollowing shows', () => {
       [b.feedUrl, 'B', 1000],
     ]);
     expect(deleted).toEqual({ [a.feedUrl]: 2000 });
+  });
+
+  it('remembers the addresses a show left, to move its progress in each browser', async () => {
+    await addShows([a, b]);
+    const moved = { feedUrl: 'https://example.net/a.xml', title: 'A' };
+    const again = { feedUrl: 'https://example.org/a.xml', title: 'A' };
+    await moveShow(a.feedUrl, moved);
+    await moveShow(moved.feedUrl, again);
+    const { shows } = await getSyncedShows();
+    expect(shows.find((s) => s.feedUrl === again.feedUrl)?.movedFrom).toEqual([
+      a.feedUrl,
+      moved.feedUrl,
+    ]);
+    expect([...movedFeeds(shows)]).toEqual([
+      [a.feedUrl, again.feedUrl],
+      [moved.feedUrl, again.feedUrl],
+    ]);
+    // Synced as they are
+    const synced = canonicalShows(await getSyncedShows());
+    const read = readShows(JSON.parse(JSON.stringify(synced.shows)), synced.deleted);
+    expect(read).toEqual(synced);
   });
 
   it('moves a show to an address followed already by just leaving the old one', async () => {
