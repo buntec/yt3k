@@ -52,6 +52,16 @@ release version: ci
     git tag "v{{version}}"
     git push origin "v{{version}}"
 
+# Redraw the dev build's icons (public-dev) from public/favicon.svg in orange; macOS only (sips)
+dev-icons:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    mkdir -p public-dev/icon
+    sed 's/#7c3aed/#ea580c/g' public/favicon.svg > public-dev/favicon.svg
+    for size in 16 32 48 96 128; do
+        sips -s format png -z "$size" "$size" public-dev/favicon.svg --out "public-dev/icon/$size.png" > /dev/null
+    done
+
 # Remove build output
 clean:
     rm -rf .output

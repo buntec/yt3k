@@ -1,8 +1,23 @@
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { defineConfig } from 'wxt';
 
 // See https://wxt.dev/api/reference/wxt/interfaces/inlineconfig.html
 export default defineConfig({
   modules: ['@wxt-dev/module-react'],
+  hooks: {
+    // The dev build takes its icons and favicon from public-dev (orange, not
+    // purple), so it's easy to tell apart from a release installed next to it.
+    // `just dev-icons` redraws them after the logo changes.
+    'build:publicAssets': (wxt, files) => {
+      if (wxt.config.command !== 'serve') return;
+      for (const file of files) {
+        if (!('absoluteSrc' in file)) continue;
+        const devSrc = resolve(wxt.config.root, 'public-dev', file.relativeDest);
+        if (existsSync(devSrc)) file.absoluteSrc = devSrc;
+      }
+    },
+  },
   // The browsers the release builds for; WXT rejects any other `-b` value.
   targetBrowsers: ['chrome', 'edge', 'firefox'],
   // Firefox too: WXT defaults it to MV2, which has no browser.action.
