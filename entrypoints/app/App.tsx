@@ -51,6 +51,9 @@ export function App() {
     <Theme theme={themes[defaultThemeSlug]} mode={mode}>
       <PlayerProvider>
         <AppShell
+          // The page links and the controls after them need about 950px side
+          // by side when logged in, so below lg the links move into a drawer.
+          mobileNav={{ breakpoint: 'lg' }}
           topNav={
             <TopNav
               label="Pages"
