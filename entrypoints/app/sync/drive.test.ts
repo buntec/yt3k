@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { connectDrive, disconnectDrive, reconnectDrive, syncNow } from './drive';
 import { addShow, getSyncedShows } from '../podcasts/shows';
-import { type Group, getSynced } from './groups';
+import { type Group, getSynced } from '../subscriptions/groups';
 import { parseSyncData, serializeSyncData } from './sync';
 
 const music: Group = { id: 'a', name: 'Music', color: 'red', channelIds: ['UC1'], updatedAt: 1 };

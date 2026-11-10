@@ -15,6 +15,7 @@ import { LivePage } from './live/LivePage';
 import { PlayerProvider } from './player';
 import { PodcastsPage } from './podcasts/PodcastsPage';
 import { ROUTES, type Route, routeHref, useRoute } from './router';
+import { DriveSyncButton } from './sync/DriveSyncDialog';
 import { SubscriptionsPage } from './subscriptions/SubscriptionsPage';
 import { WatchLaterPage } from './watch-later/WatchLaterPage';
 import { type ThemeMode, setThemeMode, useThemeMode } from './theme';
@@ -71,6 +72,7 @@ export function App() {
               endContent={
                 <HStack gap={4} vAlign="center">
                   <Text type="supporting">v{VERSION}</Text>
+                  <DriveSyncButton />
                   <Switch
                     label="Autoplay"
                     labelTooltip="Videos that start on their own aren't added to your YouTube watch history"
