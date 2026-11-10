@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CloudAlert, CloudCheck, CloudSync } from 'lucide-react';
+import { Cloud, CloudAlert, CloudCheck, CloudSync } from 'lucide-react';
 import { Banner } from '@astryxdesign/core/Banner';
 import { Button } from '@astryxdesign/core/Button';
 import { Dialog, DialogHeader } from '@astryxdesign/core/Dialog';
@@ -24,10 +24,10 @@ import {
  * Whether to offer Drive sync: in builds with a client ID, and in dev builds
  * without, to tell how to set one up.
  */
-export const isDriveSyncOffered = Boolean(GOOGLE_CLIENT_ID) || import.meta.env.DEV;
+const isDriveSyncOffered = Boolean(GOOGLE_CLIENT_ID) || import.meta.env.DEV;
 
 /** Turns Drive sync on or off, and tells how it's going. */
-export function DriveSyncDialog({ onClose }: { onClose: () => void }) {
+function DriveSyncDialog({ onClose }: { onClose: () => void }) {
   const sync = useDriveSync();
   // Why connecting or signing in again failed, if it did
   const [problem, setProblem] = useState<string>();
@@ -164,23 +164,32 @@ function SyncProgress() {
   );
 }
 
-/** How sync is going, while it's on, as a button that opens the dialog */
-export function DriveSyncButton({ onClick }: { onClick: () => void }) {
+/**
+ * For the top nav: a button that opens the dialog, showing how sync is going
+ * while it's on.
+ */
+export function DriveSyncButton() {
   const { isOn, isSyncing, error } = useDriveSync();
-  if (!isOn) return null;
-  const [icon, tooltip] = error
-    ? [CloudAlert, `Sync failed: ${error.message}`]
-    : isSyncing
-      ? [CloudSync, 'Syncing with Google Drive']
-      : [CloudCheck, 'Synced with Google Drive'];
+  const [isOpen, setIsOpen] = useState(false);
+  if (!isDriveSyncOffered) return null;
+  const [icon, tooltip] = !isOn
+    ? [Cloud, 'Sync groups and podcasts with Google Drive']
+    : error
+      ? [CloudAlert, `Sync failed: ${error.message}`]
+      : isSyncing
+        ? [CloudSync, 'Syncing with Google Drive']
+        : [CloudCheck, 'Synced with Google Drive'];
   return (
-    <IconButton
-      label={tooltip}
-      tooltip={tooltip}
-      icon={<Icon icon={icon} />}
-      variant="ghost"
-      size="sm"
-      onClick={onClick}
-    />
+    <>
+      <IconButton
+        label={tooltip}
+        tooltip={tooltip}
+        icon={<Icon icon={icon} />}
+        variant="ghost"
+        size="sm"
+        onClick={() => setIsOpen(true)}
+      />
+      {isOpen && <DriveSyncDialog onClose={() => setIsOpen(false)} />}
+    </>
   );
 }

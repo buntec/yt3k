@@ -1,7 +1,6 @@
 import { memo, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Check,
-  Cloud,
   Copy,
   Download,
   EllipsisVertical,
@@ -37,11 +36,6 @@ import { type DirectoryPodcast, applePodcastId, isAddress } from '@/utils/podcas
 import { useArtwork } from '../artwork';
 import { type PlayableEpisode, usePlayEpisode } from '../player';
 import { foldForSearch, useSearchShortcut } from '../search';
-import {
-  DriveSyncButton,
-  DriveSyncDialog,
-  isDriveSyncOffered,
-} from '../subscriptions/DriveSyncDialog';
 import { type Progress, episodeKey, setPlayed, useProgress } from './progress';
 import { type Show, useShows } from './shows';
 import {
@@ -372,7 +366,6 @@ function PodcastsNav({
   onFilterChange: (filter: ShowFilter) => void;
 }) {
   const showToast = useToast();
-  const [isSyncOpen, setIsSyncOpen] = useState(false);
 
   const unfollow = async (show: Show, title: string) => {
     if (filter === show.feedUrl) onFilterChange('all');
@@ -470,98 +463,84 @@ function PodcastsNav({
   };
 
   return (
-    <>
-      <SideNav>
-        <SideNavItem
-          label="All podcasts"
-          isSelected={filter === 'all'}
-          onClick={() => onFilterChange('all')}
-          endContent={<Badge label={shows.length} />}
-        />
-        <SideNavSection
-          title="Podcasts"
-          endContent={
-            <HStack gap={1} vAlign="center">
-              <DriveSyncButton onClick={() => setIsSyncOpen(true)} />
-              <MoreMenu
-                label="Podcast options"
-                size="sm"
-                alignment="end"
-                items={[
-                  {
-                    label: 'Export as OPML',
-                    icon: Download,
-                    description: 'For other podcast apps, or as a backup',
-                    isDisabled: shows.length === 0,
-                    onClick: () => void download(),
-                  },
-                  {
-                    label: 'Import OPML…',
-                    icon: Upload,
-                    description: 'Follows the podcasts exported from another app',
-                    onClick: upload,
-                  },
-                  ...(isDriveSyncOffered
-                    ? [
-                        {
-                          label: 'Sync with Google Drive…',
-                          icon: Cloud,
-                          description: 'Keeps podcasts the same in all your browsers',
-                          onClick: () => setIsSyncOpen(true),
-                        },
-                      ]
-                    : []),
-                ]}
-              />
-              <AddPodcastButton variant="ghost" />
-            </HStack>
-          }
-        >
-          {shows.map((show) => {
-            const feed = feeds[show.feedUrl]?.feed;
-            const title = feed?.title ?? show.title;
-            const error = errors[show.feedUrl];
-            return (
-              <SideNavItem
-                key={show.feedUrl}
-                label={title}
-                isSelected={filter === show.feedUrl}
-                onClick={() => onFilterChange(show.feedUrl)}
-                endContent={
-                  error && (
-                    <span data-tooltip={error}>
-                      <Icon icon={TriangleAlert} size="sm" color="error" />
-                    </span>
-                  )
-                }
-                actions={
-                  <MoreMenu
-                    label={`${title} options`}
-                    alignment="end"
-                    items={[
-                      ...(feed?.link
-                        ? [{ label: 'Website', icon: ExternalLink, onClick: () => openTab(feed.link!) }]
-                        : []),
-                      { label: 'Copy feed address', icon: Copy, onClick: () => void copyFeedUrl(show) },
-                      {
-                        label: 'Unfollow',
-                        icon: Trash2,
-                        variant: 'destructive',
-                        onClick: () => void unfollow(show, title),
-                      },
-                    ]}
-                  />
-                }
-              />
-            );
-          })}
-          {shows.length === 0 && (
-            <Text type="supporting">Follow podcasts with the Add podcast button.</Text>
-          )}
-        </SideNavSection>
-      </SideNav>
-      {isSyncOpen && <DriveSyncDialog onClose={() => setIsSyncOpen(false)} />}
-    </>
+    <SideNav>
+      <SideNavItem
+        label="All podcasts"
+        isSelected={filter === 'all'}
+        onClick={() => onFilterChange('all')}
+        endContent={<Badge label={shows.length} />}
+      />
+      <SideNavSection
+        title="Podcasts"
+        endContent={
+          <HStack gap={1} vAlign="center">
+            <MoreMenu
+              label="Podcast options"
+              size="sm"
+              alignment="end"
+              items={[
+                {
+                  label: 'Export as OPML',
+                  icon: Download,
+                  description: 'For other podcast apps, or as a backup',
+                  isDisabled: shows.length === 0,
+                  onClick: () => void download(),
+                },
+                {
+                  label: 'Import OPML…',
+                  icon: Upload,
+                  description: 'Follows the podcasts exported from another app',
+                  onClick: upload,
+                },
+              ]}
+            />
+            <AddPodcastButton variant="ghost" />
+          </HStack>
+        }
+      >
+        {shows.map((show) => {
+          const feed = feeds[show.feedUrl]?.feed;
+          const title = feed?.title ?? show.title;
+          const error = errors[show.feedUrl];
+          return (
+            <SideNavItem
+              key={show.feedUrl}
+              label={title}
+              isSelected={filter === show.feedUrl}
+              onClick={() => onFilterChange(show.feedUrl)}
+              endContent={
+                error && (
+                  <span data-tooltip={error}>
+                    <Icon icon={TriangleAlert} size="sm" color="error" />
+                  </span>
+                )
+              }
+              actions={
+                <MoreMenu
+                  label={`${title} options`}
+                  alignment="end"
+                  items={[
+                    ...(feed?.link
+                      ? [{ label: 'Website', icon: ExternalLink, onClick: () => openTab(feed.link!) }]
+                      : []),
+                    { label: 'Copy feed address', icon: Copy, onClick: () => void copyFeedUrl(show) },
+                    {
+                      label: 'Unfollow',
+                      icon: Trash2,
+                      variant: 'destructive',
+                      onClick: () => void unfollow(show, title),
+                    },
+                  ]}
+                />
+              }
+            />
+          );
+        })}
+        {shows.length === 0 && (
+          <Text type="supporting">Follow podcasts with the Add podcast button.</Text>
+        )}
+      </SideNavSection>
+    </SideNav>
   );
 }
 

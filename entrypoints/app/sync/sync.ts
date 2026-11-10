@@ -11,7 +11,7 @@ import {
   type Synced,
   pruneDeletions,
   readGroup,
-} from './groups';
+} from '../subscriptions/groups';
 
 /*
  * How groups, and the podcasts followed, merge between devices. Each device keeps all groups and syncs by

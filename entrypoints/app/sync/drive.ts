@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { getSyncedShows, mergeShows, onShowsChanged, updateSyncedShows } from '../podcasts/shows';
-import { getSynced, onGroupsChanged, updateSynced } from './groups';
+import { getSynced, onGroupsChanged, updateSynced } from '../subscriptions/groups';
 import {
   NewerFormatError,
   type SyncData,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { type Show, type SyncedShows, mergeShows } from '../podcasts/shows';
-import { type Group, type Synced, stampChanges } from './groups';
+import { type Group, type Synced, stampChanges } from '../subscriptions/groups';
 import {
   NewerFormatError,
   type SyncData,

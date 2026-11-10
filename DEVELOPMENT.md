@@ -60,8 +60,7 @@ one. To set one up:
    **Testing**, add the accounts that may sign in under **Audience**.
 3. Under **Clients**, create a **Web application** client with these **Authorized
    redirect URIs**. Each build logs its own to the yt3k page's console on open, and a
-   dev build without a client ID also shows it under **Sync with Google Drive…** in
-   the Subs sidebar's group menu:
+   dev build without a client ID also shows it from the cloud button in the top bar:
    - Chrome and Edge release: `https://jjaoknknijpnllfipmgibppilgojikej.chromiumapp.org/`
    - Firefox release: `https://ec6355757a5df7e685ed9f07bbda4015cf45c770.extensions.allizom.org/`
    - Firefox dev build: `https://ab4444a0dd90e69489a7de4f30ed59af513c7c2e.extensions.allizom.org/`
