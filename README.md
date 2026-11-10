@@ -1,158 +1,53 @@
 # yt3k
 
-A decluttered UI for YouTube, as a browser extension for Firefox, Chrome, Edge and
-other Chromium browsers. Improved subscription management using groups. Unlike
-other extensions, yt3k doesn't alter the YouTube page itself: its toolbar button
-opens a page in its own right. Uses the YouTube account you're logged in with in
-the same browser.
+A decluttered YouTube UI as a browser extension for Firefox, Chrome, Edge and other
+Chromium browsers. Rather than altering youtube.com, its toolbar button opens a page
+of its own, signed in with the YouTube account you use in that browser.
 
-Built with [WXT](https://wxt.dev), React and [Astryx](https://astryx.atmeta.com).
+- **Subs**: your subscriptions, latest upload first, each with its newest videos (no
+  Shorts) and an unsubscribe button. Sort channels into colored groups and filter by
+  them; groups can be exported, imported, or synced through Google Drive.
+- **Live**: live streams from your subscriptions, refreshed every minute.
+- **Feed**: YouTube's Home recommendations without Shorts or shelves, with **Not
+  interested** and **Don't recommend channel**.
+- **Watch later** and **History** (by day, no Shorts, entries removable).
+- **Podcasts**: the newest episodes of podcasts you follow by RSS, on YouTube or not.
+  Search Apple's directory, paste a feed or Apple Podcasts link, or import and export
+  OPML. Episodes play at your chosen speed, resume where you left off, and respond to
+  media keys.
 
-It has these tabs:
-
-- **Subs**: your subscriptions, most recent upload first, each with its latest 1–5
-  videos (no Shorts) and an unsubscribe button. Sort channels into colored groups
-  and filter by group in the sidebar; groups can be exported to a file and imported
-  again, or synced across browsers through your Google Drive.
-- **Live**: the live streams of your subscriptions, updated every minute, filtered
-  by the same groups as Subs.
-- **Feed**: YouTube's Home recommendations, without Shorts or shelves. **Not
-  interested** and **Don't recommend channel** work as on YouTube.
-- **Watch later**: your Watch later playlist.
-- **History**: the videos you watched, by day, without Shorts. Videos can be
-  removed from it.
-- **Podcasts**: the newest episodes of podcasts you follow by their RSS feeds,
-  which needn't be on YouTube, and can be filtered by podcast in the sidebar.
-  Find podcasts by name in Apple's podcast directory, or paste the address of a
-  feed or an Apple Podcasts link, or import the OPML file other podcast apps export
-  (and export one for them). Episodes play here, at the speed you choose, and
-  pick up where you left off, with the keyboard's and headphones' media keys
-  working as in other players. A podcast that moves to a new feed is followed
-  there. Searching asks the browser to let yt3k use the directory the first
-  time, and following a podcast to let it read feeds from its site. The podcasts
-  you follow sync through Google Drive along with the groups, while what you
-  played stays in each browser.
-
-Every tab has a search bar (press `/`), and any video can be saved to or removed
-from Watch later. Videos play in an embedded player that can be minimized into a
-corner to keep playing while you browse. The top bar has an **Autoplay** switch
-(off by default, since YouTube leaves autoplayed videos out of your watch history)
-and a theme switch.
-
-## Disclaimer
-
-yt3k is an unofficial project, not affiliated with or endorsed by YouTube or
-Google. It uses YouTube's internal web API, the one youtube.com itself uses,
-which isn't documented and may change at any time, so parts of yt3k can stop
-working until it's updated. Actions like unsubscribing or **Not interested**
-apply to your YouTube account as if you'd done them on youtube.com. yt3k sends
-your data only to YouTube, and your groups and podcasts to your own Google Drive
-if you turn on sync, and collects nothing itself. To show and play podcasts, it
-loads their feeds and episodes from the sites that host them, like any podcast
-app, and sends what you search for to Apple's podcast directory. Use it at your
-own risk.
+Every tab has search (`/`), and any video can be added to or removed from Watch
+later. Videos play in an embedded player that minimizes to a corner while you
+browse. **Autoplay** is off by default, since YouTube leaves autoplayed videos out of
+your history.
 
 ## Install
 
 Download a build from the [releases](https://github.com/buntec/yt3k/releases):
 
-- **Chrome** and other Chromium browsers (Brave, Opera, Vivaldi, …): unzip
-  `yt3k-x.y.z-chrome.zip`, then in `chrome://extensions` enable **Developer mode**,
-  click **Load unpacked** and select the unzipped folder. To update, do the same with
-  the new release: it replaces the old one and keeps your groups and subscriptions,
-  and you can delete the old folder.
+- **Chrome** and other Chromium browsers: unzip `yt3k-x.y.z-chrome.zip`, enable
+  **Developer mode** in `chrome://extensions`, click **Load unpacked** and pick the
+  folder. Update the same way; your data is kept.
 - **Edge**: the same with `yt3k-x.y.z-edge.zip` in `edge://extensions`.
-- **Firefox**: click `yt3k-x.y.z-firefox.xpi` on the release page in Firefox and
-  confirm the installation. Firefox updates it automatically from then on.
-
-## Development
-
-```sh
-npm install
-npm run dev
-```
-
-Then in Chrome: `chrome://extensions` → enable **Developer mode** → **Load unpacked** →
-select `.output/chrome-mv3-dev`. This only needs to be done once; while `npm run dev`
-is running, the extension reloads automatically on save.
-
-A local, gitignored `web-ext.config.ts` with `disabled: true` stops WXT from launching
-a separate browser profile, so you stay logged in to YouTube in your normal one.
-
-`npm test` runs the parser tests against anonymized YouTube data in `utils/__fixtures__/`,
-whose README explains how to capture fresh data when YouTube changes.
-
-`npx astryx` (the Astryx CLI) prints component docs, e.g. `npx astryx component Button`.
-`astryx-themes.ts` is generated by `npx astryx theme add`; don't edit it by hand.
-
-The dev build has its own extension ID, so it runs alongside an installed release
-with separate groups and subscriptions.
-
-For day-to-day use without the dev server, run `npm run build` and load
-`.output/chrome-mv3` instead. It has the release's ID, so it replaces an installed
-release.
-
-`npm run dev:firefox` and `npm run build:firefox` do the same for Firefox
-(`.output/firefox-mv3-dev` and `.output/firefox-mv3`). Load the extension in
-`about:debugging` → **This Firefox** → **Load Temporary Add-on** by selecting the
-`manifest.json` in that folder. Firefox removes it again when it restarts; until
-then, the `build:firefox` one takes the place of an installed release. Its
-button starts out in the Extensions (puzzle-piece) menu; pin it to the toolbar from
-there.
+- **Firefox**: open `yt3k-x.y.z-firefox.xpi` in Firefox and confirm. It updates
+  itself.
 
 ## Google Drive sync
 
-Groups and the podcasts followed sync through a file in the hidden app data folder
-of the user's Google Drive (scope `drive.appdata`, which sees nothing else in Drive).
-A podcast removed on one device is removed on the others like a deleted group, and
-one followed again after that comes back. A browser that gets a podcast from
-another one needs the permission to read its feed's site too, which the Podcasts tab
-asks for. The file's format changed when podcasts were added: older versions of yt3k
-stop syncing until they're updated, rather than drop the podcasts. Each browser keeps all
-groups and merges its copy with the file: of a group changed on two devices, the
-last change wins, and deletions are remembered for a year so they reach the other
-devices. Groups of the same name made on two devices before they synced become one.
-Firefox asks to allow sending data of the kind it calls website activity when sync
-is turned on, and sync stops if that's revoked in `about:addons`.
-**Turn off sync** only stops it in that browser: revoking yt3k's access would stop
-every browser signed in to the same Google account, so that's left to the account's
-[third-party connections](https://myaccount.google.com/connections). Builds without an OAuth client ID leave sync out; dev builds then explain
-how to add one. To set one up:
+Groups and followed podcasts can sync through a hidden app-data file in your Google
+Drive; yt3k sees nothing else there. Playback progress stays in each browser.
+**Turn off sync** affects only that browser; to revoke access everywhere, use your
+Google account's [third-party connections](https://myaccount.google.com/connections).
 
-1. In the [Google Cloud console](https://console.cloud.google.com/), create a
-   project and enable the **Google Drive API** for it.
-2. Under **Google Auth Platform**, configure the consent screen (app name, support
-   email, and for publishing, a home page and privacy policy link), and add the
-   `.../auth/drive.appdata` scope under **Data access**. While the app is in
-   **Testing**, add the Google accounts that may sign in under **Audience**.
-3. Under **Clients**, create a client of type **Web application**, with these
-   **Authorized redirect URIs**. Each build logs its own to the yt3k page's
-   console when the page opens (open the developer tools on it), and **Sync with
-   Google Drive…** in the Subs sidebar's group menu also shows it in a dev build
-   without a client ID:
-   - Chrome and Edge release: `https://jjaoknknijpnllfipmgibppilgojikej.chromiumapp.org/`
-   - Firefox release: `https://ec6355757a5df7e685ed9f07bbda4015cf45c770.extensions.allizom.org/`
-   - Firefox dev build: `https://ab4444a0dd90e69489a7de4f30ed59af513c7c2e.extensions.allizom.org/`
-   - Chrome dev build: the URI it logs, which depends on its folder
+## Disclaimer
 
-   Firefox's come from the SHA-1 hash of the add-on ID, so they stay the same on
-   every machine as long as the IDs in `wxt.config.ts` do.
-4. Put the client ID in `.env` as `WXT_GOOGLE_CLIENT_ID`. It isn't a secret: it's
-   in the built extension either way.
+yt3k is unofficial and not affiliated with YouTube or Google. It relies on YouTube's
+undocumented internal API, so parts may break until it's updated, and actions like
+unsubscribing apply to your real account. yt3k collects nothing: it talks only to
+YouTube, your Google Drive (if sync is on), Apple's podcast directory (when you
+search), and the sites hosting your podcasts. Use it at your own risk.
 
-## Releasing
+## Development
 
-Pushing a tag like `v1.2.3` runs the release workflow, which builds the extension
-with that version for Chrome, Edge and Firefox and publishes the builds as a GitHub
-release. The version in `package.json` isn't used for releases. `just release 1.2.3`
-runs the CI checks, then tags and pushes.
-
-For a signed Firefox add-on (the `.xpi`), add API credentials from
-[addons.mozilla.org](https://addons.mozilla.org/developers/addon/api/key/) as the
-repository secrets `AMO_JWT_ISSUER` and `AMO_JWT_SECRET`. The workflow then signs
-the add-on for self-distribution (unlisted; it isn't published on the add-ons site),
-and publishes the `updates.json` that installed copies check for updates.
-
-## License
-
-[MIT](LICENSE)
+See [DEVELOPMENT.md](DEVELOPMENT.md). Built with [WXT](https://wxt.dev), React and
+[Astryx](https://astryx.atmeta.com). Licensed under [MIT](LICENSE).
