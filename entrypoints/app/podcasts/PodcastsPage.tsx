@@ -34,6 +34,7 @@ import { useToast } from '@astryxdesign/core/Toast';
 import { type Episode, normalizeFeedUrl } from '@/utils/podcast';
 import { type DirectoryPodcast, applePodcastId, isAddress } from '@/utils/podcastDirectory';
 import { useArtwork } from '../artwork';
+import { BackToTop } from '../backToTop';
 import { type PlayableEpisode, usePlayEpisode } from '../player';
 import { foldForSearch, useSearchShortcut } from '../search';
 import { type Progress, episodeKey, setPlayed, useProgress } from './progress';
@@ -212,6 +213,7 @@ export function PodcastsPage() {
                 )}
               </>
             )}
+            <BackToTop />
           </VStack>
         </LayoutContent>
       }

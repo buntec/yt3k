@@ -23,6 +23,7 @@ import { TextInput } from '@astryxdesign/core/TextInput';
 import { useToast } from '@astryxdesign/core/Toast';
 import { VisuallyHidden } from '@astryxdesign/core/VisuallyHidden';
 import type { Channel, Video } from '@/utils/youtube';
+import { BackToTop } from '../backToTop';
 import { PlayableLink } from '../player';
 import { foldForSearch, useSearchShortcut } from '../search';
 import { saveToWatchLater } from '../watch-later/store';
@@ -202,6 +203,7 @@ export function SubscriptionsPage() {
                   onShowMore={() => setShownCount(shownCount + CHANNELS_PER_PAGE)}
                 />
               )}
+              <BackToTop />
             </VStack>
           )}
         </LayoutContent>

@@ -16,6 +16,7 @@ import { TextInput } from '@astryxdesign/core/TextInput';
 import { useToast } from '@astryxdesign/core/Toast';
 import { VisuallyHidden } from '@astryxdesign/core/VisuallyHidden';
 import type { ListedVideo, MetadataPart } from '@/utils/youtube';
+import { BackToTop } from '../backToTop';
 import { PlayableLink } from '../player';
 import { foldForSearch, useSearchShortcut } from '../search';
 import { COLUMN_CHOICES, type Columns, setColumns, useColumns } from './columns';
@@ -178,6 +179,7 @@ export function VideoListView({
                   isAutomatic={!deferredQuery && error === undefined}
                 />
               )}
+              <BackToTop />
             </VStack>
           )}
         </LayoutContent>

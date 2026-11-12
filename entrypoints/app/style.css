@@ -212,3 +212,16 @@ html {
 .save-later:focus-within {
   opacity: 1;
 }
+
+/* Back to top: no height of its own, so it takes no room at the end of the
+   list, and sticky, so the button above it stays at the bottom of the
+   scroll area. */
+.back-to-top {
+  position: sticky;
+  bottom: var(--spacing-6);
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: 0;
+}
