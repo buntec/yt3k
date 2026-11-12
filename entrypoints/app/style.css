@@ -225,3 +225,10 @@ html {
   justify-content: center;
   height: 0;
 }
+
+/* The button's translucent background lets the thumbnails below show
+   through, so they're blurred enough not to compete with its label. */
+.back-to-top .astryx-button {
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+}
