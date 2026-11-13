@@ -11,6 +11,7 @@ import { VStack } from '@astryxdesign/core/VStack';
 import { extensionHost } from '@/utils/extension';
 import type { Video } from '@/utils/youtube';
 import { useArtwork } from './artwork';
+import { BackToTop } from './backToTop';
 import { useAutoplay } from './autoplay';
 import { VideoComments } from './comments';
 import { getProgress, savePosition } from './podcasts/progress';
@@ -314,6 +315,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
                   />
                   {/* Hidden while minimized, keeping what was loaded */}
                   <VideoComments key={current.video.id} videoId={current.video.id} onSeek={seekTo} />
+                  {/* The dialog only scrolls once it's shown full size, after this is added */}
+                  {!isMinimized && <BackToTop scrollerRef={dialogRef} />}
                 </>
               ) : (
                 <EpisodeMedia

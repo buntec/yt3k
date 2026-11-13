@@ -7,20 +7,26 @@ import { Icon } from '@astryxdesign/core/Icon';
  * A button that scrolls the list it's in back to the top, shown once the list
  * is scrolled down by more than a screen. Put it last in the list's column: it
  * floats centered at the bottom of the scroll area, taking no room of its own.
+ * `scrollerRef` is the element that scrolls, for one that may not scroll yet
+ * when the button is added; otherwise the button finds it.
  */
-export function BackToTop() {
+export function BackToTop({ scrollerRef }: { scrollerRef?: React.RefObject<HTMLElement | null> }) {
   const ref = useRef<HTMLDivElement>(null);
   const [scroller, setScroller] = useState<HTMLElement | null>(null);
   const [isShown, setIsShown] = useState(false);
 
   // The page's LayoutContent, or whatever else scrolls the list
   useEffect(() => {
+    if (scrollerRef) {
+      setScroller(scrollerRef.current);
+      return;
+    }
     let el = ref.current?.parentElement ?? null;
     while (el && !['auto', 'scroll'].includes(getComputedStyle(el).overflowY)) {
       el = el.parentElement;
     }
     setScroller(el);
-  }, []);
+  }, [scrollerRef]);
 
   useEffect(() => {
     if (!scroller) return;

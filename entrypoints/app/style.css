@@ -81,6 +81,11 @@ html {
   display: none;
 }
 
+/* It takes no room, so no gap before it either (the full-size player's gap) */
+.player > .back-to-top {
+  margin-top: calc(-1 * var(--spacing-3));
+}
+
 /* A comment's line breaks, and long links that would widen the player */
 .comment-text {
   white-space: pre-line;
