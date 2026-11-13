@@ -81,9 +81,12 @@ html {
   display: none;
 }
 
-/* It takes no room, so no gap before it either (the full-size player's gap) */
+/* Room for the button below the last comment, so scrolled all the way down,
+   the button covers none of it. With the player's padding below it (less
+   than the button's distance from the bottom, which it keeps), the button's
+   height leaves the player's gap between it and the last comment. */
 .player > .back-to-top {
-  margin-top: calc(-1 * var(--spacing-3));
+  height: var(--size-element-md);
 }
 
 /* A comment's line breaks, and long links that would widen the player */

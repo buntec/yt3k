@@ -851,8 +851,9 @@ function parseCommentText(content: any, videoId: string): CommentText[] {
     const part: CommentText = { text: text.slice(run.startIndex, at) };
     const command = run.onTap?.innertubeCommand;
     const watch = command?.watchEndpoint;
-    if (watch?.videoId === videoId && watch.startTimeSeconds !== undefined) {
-      part.seconds = Number(watch.startTimeSeconds);
+    // YouTube leaves out the start of a time at the very beginning, 0:00.
+    if (watch?.videoId === videoId) {
+      part.seconds = Number(watch.startTimeSeconds ?? 0);
     } else {
       const url = command?.urlEndpoint?.url ?? command?.commandMetadata?.webCommandMetadata?.url;
       if (typeof url === 'string') part.url = unwrapRedirect(absoluteUrl(url)!);

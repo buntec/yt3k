@@ -748,6 +748,25 @@ describe('parseComments of a comment with links', () => {
     ]);
   });
 
+  it('reads a time in this video without a start as its beginning', () => {
+    // As YouTube describes 0:00, with no startTimeSeconds
+    const [start] = parseComments(
+      response(
+        content('From 0:00 on', [
+          [
+            '0:00',
+            {
+              commandMetadata: { webCommandMetadata: { url: '/watch?v=video000001' } },
+              watchEndpoint: { videoId: 'video000001' },
+            },
+          ],
+        ]),
+      ),
+      'video000001',
+    ).comments;
+    expect(start!.text).toEqual([{ text: 'From ' }, { text: '0:00', seconds: 0 }, { text: ' on' }]);
+  });
+
   it('reads whether it is pinned, hearted and liked by the user', () => {
     expect(comment).toMatchObject({
       isPinned: true,
