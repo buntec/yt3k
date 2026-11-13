@@ -68,9 +68,12 @@ html {
   flex-shrink: 0;
 }
 
+/* Sticky positions are measured inside the player's padding, so the header
+   rises by that padding to cover the gap above it, where the video and
+   comments would otherwise show as they scroll by. */
 .player:modal > :first-child {
   position: sticky;
-  top: 0;
+  top: calc(-1 * var(--spacing-4));
   z-index: 1;
   margin-top: calc(-1 * var(--spacing-4));
   padding-top: var(--spacing-4);
