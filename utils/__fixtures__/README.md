@@ -20,6 +20,10 @@ random, and colors taken from thumbnails are left out.
   is live, with its header
 - `channel-header.json`: the header of YouTube's API response for a subscribed
   channel's Videos tab, of a channel that isn't live
+- `comments.json`: YouTube's API response for the first comments on a video on
+  Home, with its header, and the video's ID; comment texts keep only their
+  spaces, every other character becoming `x`, so links stay where they were
+- `comment-replies.json`: YouTube's API response for the replies to one of them
 - `podcast-feed.xml`: a made-up podcast RSS feed for `utils/podcast.test.ts`, not
   captured: it has the parts real feeds have, and some they commonly get wrong
 

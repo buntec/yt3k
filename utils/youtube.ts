@@ -680,6 +680,213 @@ function parseVideoRenderer(renderer: any): ListedVideo {
   };
 }
 
+/** A comment on a video, with the replies YouTube sent along with it */
+export interface Comment {
+  id: string;
+  author: {
+    /** e.g. "@name" */
+    name: string;
+    url?: string;
+    avatar?: string;
+    /** Whether it's the channel that uploaded the video */
+    isCreator: boolean;
+    isVerified: boolean;
+  };
+  /** The text, in parts that link somewhere or not */
+  text: CommentText[];
+  /** As YouTube shows it, e.g. "2 weeks ago" or "3 days ago (edited)" */
+  published: string;
+  /** Rounded the way YouTube shows it, e.g. "1.2K"; none for no likes */
+  likes?: string;
+  /** e.g. "12"; none for no replies */
+  replyCount?: string;
+  isPinned: boolean;
+  /** Whether the video's channel gave it a heart */
+  isHearted: boolean;
+  /** The replies YouTube sent with it; replies to replies come with those */
+  replies: Comment[];
+  /** Token for (more of) its replies, if there are any YouTube didn't send */
+  moreReplies?: string;
+}
+
+/**
+ * A part of a comment's text. A link has a `url`, or `seconds` when it's a
+ * time in the video commented on, which YouTube's own links seek to.
+ */
+export interface CommentText {
+  text: string;
+  url?: string;
+  seconds?: number;
+}
+
+export interface CommentsPage {
+  comments: Comment[];
+  /** Token for the next comments, if there are more */
+  continuation?: string;
+  /** e.g. "1,234 Comments", on the first page only */
+  count?: string;
+  /** Why there are none, e.g. "Comments are turned off." */
+  message?: string;
+}
+
+/** The first comments on a video, in YouTube's default ("Top") order. */
+export async function fetchComments(videoId: string): Promise<CommentsPage> {
+  const { status, data } = await innertubeRequest('next', { videoId });
+  if (status !== 200) throw new Error(`Loading comments failed (${status})`);
+  const section = findAll(data, 'itemSectionRenderer').find(
+    (s) => s.sectionIdentifier === 'comment-item-section',
+  );
+  const token = findAll(section, 'continuationCommand')[0]?.token;
+  if (!token) {
+    const message = findAll(data, 'messageRenderer')[0]?.text;
+    return { comments: [], message: message && textOf(message) };
+  }
+  return fetchMoreComments(videoId, token);
+}
+
+/**
+ * The comments or replies a token from fetchComments(), or from an earlier
+ * call to this, was given for.
+ */
+export async function fetchMoreComments(
+  videoId: string,
+  continuation: string,
+): Promise<CommentsPage> {
+  const { status, data } = await innertubeRequest('next', { continuation });
+  if (status !== 200) throw new Error(`Loading comments failed (${status})`);
+  return parseComments(data, videoId);
+}
+
+/**
+ * The comments, or replies, in YouTube's API response for a token for them.
+ * YouTube lists the threads and sends what's in each comment apart from them,
+ * as entities the threads refer to by key.
+ */
+export function parseComments(data: unknown, videoId: string): CommentsPage {
+  const entities = new Map<string, any>();
+  for (const name of ['commentEntityPayload', 'engagementToolbarStateEntityPayload']) {
+    for (const entity of findAll(data, name)) entities.set(entity.key, entity);
+  }
+  const endpoints = (data as { onResponseReceivedEndpoints?: unknown } | null)
+    ?.onResponseReceivedEndpoints;
+  const header = findAll(endpoints, 'commentsHeaderRenderer')[0];
+  return {
+    ...parseCommentThreads(findAll(endpoints, 'continuationItems').flat(), entities, videoId),
+    count: header?.countText && textOf(header.countText),
+  };
+}
+
+function parseCommentThreads(
+  items: any[],
+  entities: Map<string, any>,
+  videoId: string,
+): Pick<CommentsPage, 'comments' | 'continuation'> {
+  return {
+    comments: items
+      .map((item) => item?.commentThreadRenderer && parseCommentThread(item.commentThreadRenderer, entities, videoId))
+      .filter((comment) => comment !== undefined),
+    // Only the list's own: those in the threads are for their replies.
+    continuation: findAll(
+      items.filter((item) => item?.continuationItemRenderer),
+      'continuationCommand',
+    ).at(-1)?.token,
+  };
+}
+
+function parseCommentThread(
+  thread: any,
+  entities: Map<string, any>,
+  videoId: string,
+): Comment | undefined {
+  const view = thread.commentViewModel?.commentViewModel;
+  const entity = view && entities.get(view.commentKey);
+  if (!entity) return undefined;
+  const { properties, author, toolbar } = entity;
+  const toolbarState = entities.get(view.toolbarStateKey ?? properties.toolbarStateKey);
+  const isLiked = toolbarState?.likeState === 'TOOLBAR_LIKE_STATE_LIKED';
+  const likes = count(isLiked ? toolbar?.likeCountLiked : toolbar?.likeCountNotliked);
+  const replyCount = count(toolbar?.replyCount);
+  const replies = parseCommentThreads(
+    thread.replies?.commentRepliesRenderer?.subThreads ?? [],
+    entities,
+    videoId,
+  );
+  return {
+    id: properties.commentId ?? view.commentId,
+    author: {
+      name: author?.displayName ?? '',
+      url:
+        channelUrl(findAll(author?.channelCommand, 'browseEndpoint')[0]) ??
+        (author?.channelId && `${ORIGIN}/channel/${author.channelId}`),
+      avatar: absoluteUrl(author?.avatarThumbnailUrl),
+      isCreator: author?.isCreator === true,
+      isVerified: author?.isVerified === true,
+    },
+    text: parseCommentText(properties.content, videoId),
+    published: properties.publishedTime ?? '',
+    likes,
+    replyCount,
+    isPinned: view.pinnedText !== undefined,
+    isHearted: toolbarState?.heartState === 'TOOLBAR_HEART_STATE_HEARTED',
+    replies: replies.comments,
+    moreReplies: replies.continuation,
+  };
+}
+
+/**
+ * A comment's text, split at the links in it. Links to elsewhere go there
+ * directly, rather than through YouTube's warning page.
+ */
+function parseCommentText(content: any, videoId: string): CommentText[] {
+  const text: string = content?.content ?? '';
+  const runs = (Array.isArray(content?.commandRuns) ? content.commandRuns : [])
+    .filter((run: any) => run.startIndex >= 0 && run.length > 0)
+    .sort((a: any, b: any) => a.startIndex - b.startIndex);
+  const parts: CommentText[] = [];
+  let at = 0;
+  for (const run of runs) {
+    if (run.startIndex < at || run.startIndex + run.length > text.length) continue;
+    if (run.startIndex > at) parts.push({ text: text.slice(at, run.startIndex) });
+    at = run.startIndex + run.length;
+    const part: CommentText = { text: text.slice(run.startIndex, at) };
+    const command = run.onTap?.innertubeCommand;
+    const watch = command?.watchEndpoint;
+    if (watch?.videoId === videoId && watch.startTimeSeconds !== undefined) {
+      part.seconds = Number(watch.startTimeSeconds);
+    } else {
+      const url = command?.urlEndpoint?.url ?? command?.commandMetadata?.webCommandMetadata?.url;
+      if (typeof url === 'string') part.url = unwrapRedirect(absoluteUrl(url)!);
+    }
+    parts.push(part);
+  }
+  if (at < text.length || parts.length === 0) parts.push({ text: text.slice(at) });
+  return parts;
+}
+
+/** A count of likes or replies as YouTube shows it; none for none, which it shows as blank */
+function count(text: unknown): string | undefined {
+  const trimmed = typeof text === 'string' ? text.trim() : '';
+  return trimmed && trimmed !== '0' ? trimmed : undefined;
+}
+
+/** Where a link through YouTube's "You're leaving YouTube" page leads */
+function unwrapRedirect(url: string): string {
+  try {
+    const parsed = new URL(url);
+    const target = parsed.searchParams.get('q');
+    if (parsed.origin === ORIGIN && parsed.pathname === '/redirect' && target) {
+      const destination = new URL(target);
+      if (['http:', 'https:'].includes(destination.protocol)) return destination.href;
+    }
+  } catch {}
+  return url;
+}
+
+/** The text of YouTube's `{ simpleText }` or `{ runs: [{ text }] }` */
+function textOf(text: any): string {
+  return text?.simpleText ?? text?.runs?.map((run: any) => run.text).join('') ?? '';
+}
+
 /** Unsubscribe from a channel. */
 export async function unsubscribe(channel: Channel): Promise<void> {
   const { status } = await innertubeRequest('subscription/unsubscribe', {

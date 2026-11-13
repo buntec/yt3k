@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import channelHeader from './__fixtures__/channel-header.json';
 import channelLive from './__fixtures__/channel-live.json';
 import channelVideos from './__fixtures__/channel-videos.json';
+import commentReplies from './__fixtures__/comment-replies.json';
+import comments from './__fixtures__/comments.json';
 import history from './__fixtures__/history.json';
 import historyContinuation from './__fixtures__/history-continuation.json';
 import home from './__fixtures__/home.json';
@@ -12,6 +14,7 @@ import watchLater from './__fixtures__/watch-later.json';
 import {
   parseChannelIsLive,
   parseChannelVideos,
+  parseComments,
   parseHistoryContinuation,
   parseHistoryPage,
   parseHomeContinuation,
@@ -582,5 +585,193 @@ describe('parseSubscriptionsFeedLiveStreams', () => {
 
   it('returns nothing for an unrelated response', () => {
     expect(parseSubscriptionsFeedLiveStreams({})).toEqual([]);
+  });
+});
+
+describe('parseComments', () => {
+  const page = parseComments(comments, comments.videoId);
+
+  it('reads the comments in order, with the token for more', () => {
+    expect(page.comments.map((c) => c.id)).toEqual(['token-8', 'token-16']);
+    expect(page.continuation).toBe('token-18');
+  });
+
+  it('reads how many comments there are from the header', () => {
+    expect(page.count).toBe('6,362Text 2');
+  });
+
+  it('reads author, text, age, likes and the token for replies', () => {
+    expect(page.comments[0]).toEqual({
+      id: 'token-8',
+      author: {
+        name: 'Text 14',
+        url: 'https://www.youtube.com/channel/UCchannel000000000000001',
+        avatar: 'https://yt3.ggpht.com/image-1',
+        isCreator: false,
+        isVerified: false,
+      },
+      text: [{ text: 'xxxxx xxxx xxxx xxxxxx xx xxxxx xxxx xxxx xxxxxx xx x xxxxxxxx xxxxxxx' }],
+      published: '8 hours ago',
+      likes: '2.1K',
+      replyCount: '76',
+      isPinned: false,
+      isHearted: false,
+      replies: [],
+      moreReplies: 'token-4',
+    });
+  });
+
+  it('returns nothing for an unrelated response', () => {
+    expect(parseComments({}, 'video000001')).toEqual({ comments: [] });
+  });
+});
+
+describe('parseComments for replies', () => {
+  const page = parseComments(commentReplies, commentReplies.videoId);
+
+  it('reads the replies, with the token for more', () => {
+    expect(page.comments.map((c) => c.id)).toEqual(['Text 25', 'Text 26', 'Text 30']);
+    expect(page.continuation).toBe('token-39');
+    expect(page.count).toBeUndefined();
+  });
+
+  it('reads replies to a reply that come with it', () => {
+    expect(page.comments[2]!.replies).toEqual([
+      expect.objectContaining({ id: 'Text 29', text: [{ text: 'xxxxxxxxxxxxxxxx' }] }),
+    ]);
+    expect(page.comments[2]!.moreReplies).toBeUndefined();
+  });
+
+  it('leaves out the count of likes YouTube shows as blank, for none', () => {
+    expect(page.comments[2]!.replies[0]!.likes).toBeUndefined();
+    expect(page.comments[0]!.replyCount).toBeUndefined();
+  });
+});
+
+describe('parseComments of a comment with links', () => {
+  /** An API response with one pinned, hearted comment, liked by the user */
+  const response = (content: unknown) => ({
+    onResponseReceivedEndpoints: [
+      {
+        appendContinuationItemsAction: {
+          continuationItems: [
+            {
+              commentThreadRenderer: {
+                commentViewModel: {
+                  commentViewModel: {
+                    commentKey: 'key-1',
+                    toolbarStateKey: 'state-1',
+                    pinnedText: 'Pinned by @channel',
+                  },
+                },
+              },
+            },
+          ],
+        },
+      },
+    ],
+    frameworkUpdates: {
+      entityBatchUpdate: {
+        mutations: [
+          {
+            payload: {
+              commentEntityPayload: {
+                key: 'key-1',
+                properties: { commentId: 'comment-1', publishedTime: '1 day ago', content },
+                author: { displayName: '@channel', channelId: 'UCx', isCreator: true, isVerified: true },
+                toolbar: { likeCountNotliked: '12', likeCountLiked: '13', replyCount: '' },
+              },
+            },
+          },
+          {
+            payload: {
+              engagementToolbarStateEntityPayload: {
+                key: 'state-1',
+                likeState: 'TOOLBAR_LIKE_STATE_LIKED',
+                heartState: 'TOOLBAR_HEART_STATE_HEARTED',
+              },
+            },
+          },
+        ],
+      },
+    },
+  });
+
+  /** A comment's text with links on the parts of it given, as YouTube describes them */
+  const content = (text: string, links: [part: string, command: unknown][]) => ({
+    content: text,
+    commandRuns: links.map(([part, innertubeCommand]) => ({
+      startIndex: text.indexOf(part),
+      length: part.length,
+      onTap: { innertubeCommand },
+    })),
+  });
+
+  // Made up, as the captured comments have none: a time in the video, a link
+  // through YouTube's warning page, a mention and a time in another video.
+  const [comment] = parseComments(
+    response(
+      content('At 1:02 see example.com, @someone and 0:05 there', [
+        [
+          'example.com',
+          {
+            urlEndpoint: {
+              url: 'https://www.youtube.com/redirect?event=comments&q=https%3A%2F%2Fexample.com%2Fa%3Fb%3D1',
+            },
+          },
+        ],
+        ['1:02', { watchEndpoint: { videoId: 'video000001', startTimeSeconds: 62 } }],
+        ['@someone', { commandMetadata: { webCommandMetadata: { url: '/@someone' } } }],
+        [
+          '0:05',
+          {
+            commandMetadata: { webCommandMetadata: { url: '/watch?v=other000001&t=5s' } },
+            watchEndpoint: { videoId: 'other000001', startTimeSeconds: 5 },
+          },
+        ],
+      ]),
+    ),
+    'video000001',
+  ).comments;
+
+  it('splits the text at its links: times in this video, and links elsewhere directly', () => {
+    expect(comment!.text).toEqual([
+      { text: 'At ' },
+      { text: '1:02', seconds: 62 },
+      { text: ' see ' },
+      { text: 'example.com', url: 'https://example.com/a?b=1' },
+      { text: ', ' },
+      { text: '@someone', url: 'https://www.youtube.com/@someone' },
+      { text: ' and ' },
+      { text: '0:05', url: 'https://www.youtube.com/watch?v=other000001&t=5s' },
+      { text: ' there' },
+    ]);
+  });
+
+  it('reads whether it is pinned, hearted and liked by the user', () => {
+    expect(comment).toMatchObject({
+      isPinned: true,
+      isHearted: true,
+      likes: '13',
+      replyCount: undefined,
+      author: { name: '@channel', isCreator: true, isVerified: true },
+    });
+  });
+
+  it("doesn't skip YouTube's warning page for anything but a web page", () => {
+    const url = 'https://www.youtube.com/redirect?q=javascript%3Aalert(1)';
+    const [unsafe] = parseComments(
+      response(content('click', [['click', { urlEndpoint: { url } }]])),
+      'video000001',
+    ).comments;
+    expect(unsafe!.text).toEqual([{ text: 'click', url }]);
+  });
+
+  it('ignores links outside the text', () => {
+    const [odd] = parseComments(
+      response({ content: 'short', commandRuns: [{ startIndex: 3, length: 10 }] }),
+      'video000001',
+    ).comments;
+    expect(odd!.text).toEqual([{ text: 'short' }]);
   });
 });
