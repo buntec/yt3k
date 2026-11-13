@@ -55,6 +55,46 @@ html {
   color: var(--color-text-primary);
 }
 
+/* Full size, it scrolls down to a video's comments, its header staying in
+   view to minimize or close it. Its contents keep their size rather than
+   shrink to fit. */
+.player:modal {
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.player:modal > * {
+  flex-shrink: 0;
+}
+
+.player:modal > :first-child {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin-top: calc(-1 * var(--spacing-4));
+  padding-top: var(--spacing-4);
+  background: var(--color-background-surface);
+}
+
+.player:not(:modal) .player-comments {
+  display: none;
+}
+
+/* Room for the button below the last comment, so scrolled all the way down,
+   the button covers none of it. With the player's padding below it (less
+   than the button's distance from the bottom, which it keeps), the button's
+   height leaves the player's gap between it and the last comment. */
+.player > .back-to-top {
+  height: var(--size-element-md);
+}
+
+/* A comment's line breaks, and long links that would widen the player */
+.comment-text {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
 /* VStack's display: flex would otherwise show the closed, empty dialog. */
 .player:not([open]) {
   display: none;

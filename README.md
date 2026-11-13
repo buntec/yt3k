@@ -17,8 +17,9 @@ of its own, signed in with the YouTube account you use in that browser.
   media keys.
 
 Every tab has search (`/`), and any video can be added to or removed from Watch
-later. Videos play in an embedded player that minimizes to a corner while you
-browse. **Autoplay** is off by default, since YouTube leaves autoplayed videos out of
+later. Videos play in an embedded player, with their comments below, that
+minimizes to a corner while you browse; a time in a comment plays the video from
+there. **Autoplay** is off by default, since YouTube leaves autoplayed videos out of
 your history.
 
 ## Install

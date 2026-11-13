@@ -11,7 +11,9 @@ import { VStack } from '@astryxdesign/core/VStack';
 import { extensionHost } from '@/utils/extension';
 import type { Video } from '@/utils/youtube';
 import { useArtwork } from './artwork';
+import { BackToTop } from './backToTop';
 import { useAutoplay } from './autoplay';
+import { VideoComments } from './comments';
 import { getProgress, savePosition } from './podcasts/progress';
 import { SPEEDS, type Speed, setSpeed, useSpeed } from './podcasts/speed';
 
@@ -208,6 +210,25 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     );
   };
 
+  // The full-size player scrolls down to the video's comments; another video starts at the top.
+  const playingId = current?.kind === 'video' ? current.video.id : current?.episode.key;
+  useEffect(() => {
+    dialogRef.current!.scrollTop = 0;
+  }, [playingId]);
+
+  /** Plays the video from `seconds` in, like a time in a comment does on YouTube. */
+  const seekTo = (seconds: number) => {
+    const player = frameRef.current?.contentWindow;
+    for (const [func, args] of [
+      ['seekTo', [seconds, true]],
+      ['playVideo', []],
+    ] as const) {
+      player?.postMessage(JSON.stringify({ event: 'command', func, args }), EMBED_ORIGIN);
+    }
+    const isReduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    dialogRef.current?.scrollTo({ top: 0, behavior: isReduced ? 'auto' : 'smooth' });
+  };
+
   const title = current?.kind === 'video' ? current.video.title : current?.episode.title;
   const isAudio = current?.kind === 'episode' && !current.episode.mediaType?.startsWith('video/');
 
@@ -283,14 +304,20 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
                 onOpenChange={closePlayer}
               />
               {current.kind === 'video' ? (
-                <iframe
-                  ref={frameRef}
-                  className="player-frame"
-                  src={current.src}
-                  title="YouTube video player"
-                  allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
-                  onLoad={onFrameLoad}
-                />
+                <>
+                  <iframe
+                    ref={frameRef}
+                    className="player-frame"
+                    src={current.src}
+                    title="YouTube video player"
+                    allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+                    onLoad={onFrameLoad}
+                  />
+                  {/* Hidden while minimized, keeping what was loaded */}
+                  <VideoComments key={current.video.id} videoId={current.video.id} onSeek={seekTo} />
+                  {/* The dialog only scrolls once it's shown full size, after this is added */}
+                  {!isMinimized && <BackToTop scrollerRef={dialogRef} />}
+                </>
               ) : (
                 <EpisodeMedia
                   // A new element for each episode, so one's position isn't saved for another

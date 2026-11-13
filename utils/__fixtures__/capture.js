@@ -3,8 +3,9 @@
 //
 // Keeps a few items of each kind from the Home page, the next page of Home,
 // the subscriptions page, a subscribed channel's Videos tab, Watch later,
-// History (and its next part), the subscriptions feed and a live channel's
-// Live tab, then replaces titles, names, IDs,
+// History (and its next part), the subscriptions feed, a live channel's
+// Live tab and the comments on a video (and replies to one), then replaces
+// titles, names, IDs,
 // URLs and tokens with placeholders and scrambles the digits of counts, ages
 // and durations. Clipboard writes need a click, so it adds a button for that.
 
@@ -43,6 +44,7 @@ const SAFE = [
   /^(LIVE|SHORTS|New|Members only|Premiere|Upcoming|No views)$/i,
   /^\s*[·•]?\s*$/, // separators
   /^(Today|Yesterday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)$/, // History's days
+  /^[x\s]+$/, // comment texts, masked by maskCommentTexts()
 ];
 // Counts, ages and durations: the format is kept, the digits scrambled.
 const NUMERIC = [
@@ -214,6 +216,125 @@ async function innertubeRequest(endpoint, body, { language } = {}) {
 
 const withLanguage = (context, hl) => (hl ? { ...context, client: { ...context.client, hl } } : context);
 
+/**
+ * Comment texts with every character but whitespace replaced by x, so the
+ * links in them still start and end where their runs say.
+ */
+function maskCommentTexts(data) {
+  for (const entity of findAll(data, 'commentEntityPayload')) {
+    const content = entity.properties?.content;
+    if (typeof content?.content === 'string') content.content = content.content.replace(/\S/g, 'x');
+  }
+  return data;
+}
+
+/**
+ * The entities of the comments `items` refer to, which YouTube sends apart
+ * from them: each comment's and its like and heart state.
+ */
+function pickCommentEntities(data, items) {
+  const keys = new Set([...findAll(items, 'commentKey'), ...findAll(items, 'toolbarStateKey')]);
+  const mutations = findAll(data.frameworkUpdates, 'mutations')[0] ?? [];
+  return {
+    entityBatchUpdate: {
+      mutations: mutations.filter(
+        (m) =>
+          keys.has(m.entityKey) &&
+          (m.payload?.commentEntityPayload || m.payload?.engagementToolbarStateEntityPayload),
+      ),
+    },
+  };
+}
+
+/**
+ * The comments on a video on Home: the first page, with its header, a few
+ * comments, a pinned one, one with links, one with replies and the token for
+ * more; and a page of replies to that one, with replies to a reply among them
+ * if there are any. Of the first videos, the first with all of these, else
+ * the first with replies.
+ */
+async function captureComments(homeItems) {
+  const videoIds = findAll(homeItems, 'lockupViewModel')
+    .filter((l) => l.contentType === 'LOCKUP_CONTENT_TYPE_VIDEO')
+    .map((l) => l.contentId);
+  let fallback;
+  for (const videoId of videoIds.slice(0, 8)) {
+    const watch = await innertubeRequest('next', { videoId });
+    const section = findAll(watch, 'itemSectionRenderer').find((s) => s.sectionIdentifier === 'comment-item-section');
+    const token = findAll(section, 'continuationCommand')[0]?.token;
+    if (!token) continue;
+    const data = await innertubeRequest('next', { continuation: token });
+    const [headerEndpoint, threadsEndpoint] = data.onResponseReceivedEndpoints ?? [];
+    const items = threadsEndpoint?.reloadContinuationItemsCommand?.continuationItems ?? [];
+    const thread = (i) => i.commentThreadRenderer;
+    const hasLinks = (i) => {
+      const key = thread(i)?.commentViewModel?.commentViewModel?.commentKey;
+      return findAll(data.frameworkUpdates, 'commentEntityPayload').some(
+        (p) => p.key === key && p.properties?.content?.commandRuns,
+      );
+    };
+    const withReplies = items.find((i) => thread(i)?.replies);
+    if (!withReplies) continue;
+    const picks = new Set([
+      ...items.filter(thread).slice(0, 2),
+      items.find((i) => thread(i)?.commentViewModel?.commentViewModel?.pinnedText),
+      items.find(hasLinks),
+      withReplies,
+      items.find((i) => i.continuationItemRenderer),
+    ]);
+    const picked = items.filter((i) => picks.has(i));
+    // Without what writing a comment needs, of which its emoji are most
+    const header = findAll(headerEndpoint, 'commentsHeaderRenderer')[0];
+    const comments = {
+      videoId,
+      onResponseReceivedEndpoints: [
+        {
+          reloadContinuationItemsCommand: {
+            ...headerEndpoint.reloadContinuationItemsCommand,
+            continuationItems: [
+              {
+                commentsHeaderRenderer: {
+                  countText: header?.countText,
+                  commentsCount: header?.commentsCount,
+                  sortMenu: header?.sortMenu,
+                },
+              },
+            ],
+          },
+        },
+        { reloadContinuationItemsCommand: { ...threadsEndpoint.reloadContinuationItemsCommand, continuationItems: picked } },
+      ],
+      frameworkUpdates: pickCommentEntities(data, picked),
+    };
+
+    const repliesData = await innertubeRequest('next', {
+      continuation: findAll(withReplies.commentThreadRenderer.replies, 'continuationCommand')[0].token,
+    });
+    const append = repliesData.onResponseReceivedEndpoints[0].appendContinuationItemsAction;
+    const replyItems = append.continuationItems;
+    const replyPicks = new Set([
+      ...replyItems.filter(thread).slice(0, 2),
+      replyItems.find((i) => thread(i)?.replies),
+      replyItems.find((i) => i.continuationItemRenderer),
+    ]);
+    const pickedReplies = replyItems.filter((i) => replyPicks.has(i));
+    const commentReplies = {
+      videoId,
+      onResponseReceivedEndpoints: [
+        { appendContinuationItemsAction: { ...append, continuationItems: pickedReplies } },
+      ],
+      frameworkUpdates: pickCommentEntities(repliesData, pickedReplies),
+    };
+    const capture = { comments: maskCommentTexts(comments), commentReplies: maskCommentTexts(commentReplies) };
+    if (findAll(picked, 'pinnedText').length > 0 && items.some(hasLinks)) return capture;
+    fallback ??= capture;
+  }
+  if (!fallback) {
+    console.warn('No video on Home has comments with replies: leaving out comments and commentReplies.');
+  }
+  return fallback ?? {};
+}
+
 async function capture() {
   const homeData = initialData(await (await fetch('/', { credentials: 'include' })).text());
   const grid = findAll(homeData, 'richGridRenderer')[0];
@@ -352,6 +473,8 @@ async function capture() {
     }
   }
 
+  const { comments, commentReplies } = await captureComments(grid.contents);
+
   return anonymize({
     home,
     homeContinuation,
@@ -363,6 +486,8 @@ async function capture() {
     subscriptionsFeed,
     channelLive,
     channelHeader,
+    comments,
+    commentReplies,
   });
 }
 

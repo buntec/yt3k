@@ -1,0 +1,480 @@
+{
+ "videoId": "video000001",
+ "onResponseReceivedEndpoints": [
+  {
+   "appendContinuationItemsAction": {
+    "continuationItems": [
+     {
+      "commentThreadRenderer": {
+       "renderingPriority": "RENDERING_PRIORITY_UNKNOWN",
+       "isModeratedElqComment": false,
+       "commentViewModel": {
+        "commentViewModel": {
+         "commentKey": "token-23",
+         "sharedKey": "Text 11",
+         "toolbarStateKey": "token-24",
+         "toolbarSurfaceKey": "token-25",
+         "commentId": "Text 25",
+         "commentSurfaceKey": "token-26",
+         "allowProfileCard": true,
+         "sharedSurfaceKey": "token-10",
+         "inlineRepliesKey": "Text 12",
+         "rendererContext": {}
+        }
+       }
+      }
+     },
+     {
+      "commentThreadRenderer": {
+       "renderingPriority": "RENDERING_PRIORITY_UNKNOWN",
+       "isModeratedElqComment": false,
+       "commentViewModel": {
+        "commentViewModel": {
+         "commentKey": "token-27",
+         "sharedKey": "Text 11",
+         "toolbarStateKey": "token-28",
+         "toolbarSurfaceKey": "token-29",
+         "commentId": "Text 26",
+         "commentSurfaceKey": "token-30",
+         "allowProfileCard": true,
+         "sharedSurfaceKey": "token-10",
+         "inlineRepliesKey": "Text 12",
+         "rendererContext": {}
+        }
+       }
+      }
+     },
+     {
+      "commentThreadRenderer": {
+       "replies": {
+        "commentRepliesRenderer": {
+         "viewReplies": {
+          "buttonRenderer": {
+           "text": {
+            "runs": [
+             {
+              "text": "Text 27"
+             }
+            ]
+           },
+           "icon": {
+            "iconType": "EXPAND"
+           }
+          }
+         },
+         "targetId": "Text 28",
+         "subThreads": [
+          {
+           "commentThreadRenderer": {
+            "renderingPriority": "RENDERING_PRIORITY_UNKNOWN",
+            "isModeratedElqComment": false,
+            "commentViewModel": {
+             "commentViewModel": {
+              "commentKey": "token-31",
+              "sharedKey": "Text 11",
+              "toolbarStateKey": "token-32",
+              "toolbarSurfaceKey": "token-33",
+              "commentId": "Text 29",
+              "commentSurfaceKey": "token-34",
+              "allowProfileCard": true,
+              "sharedSurfaceKey": "token-10",
+              "inlineRepliesKey": "Text 12",
+              "rendererContext": {}
+             }
+            }
+           }
+          }
+         ]
+        }
+       },
+       "renderingPriority": "RENDERING_PRIORITY_UNKNOWN",
+       "isModeratedElqComment": false,
+       "commentViewModel": {
+        "commentViewModel": {
+         "commentKey": "token-35",
+         "sharedKey": "Text 11",
+         "toolbarStateKey": "token-36",
+         "toolbarSurfaceKey": "token-37",
+         "commentId": "Text 30",
+         "commentSurfaceKey": "token-38",
+         "allowProfileCard": true,
+         "sharedSurfaceKey": "token-10",
+         "inlineRepliesKey": "Text 12",
+         "rendererContext": {}
+        }
+       }
+      }
+     },
+     {
+      "continuationItemRenderer": {
+       "button": {
+        "buttonRenderer": {
+         "text": {
+          "runs": [
+           {
+            "text": "Text 31"
+           }
+          ]
+         },
+         "icon": {
+          "iconType": "EXPAND"
+         },
+         "command": {
+          "commandMetadata": {},
+          "continuationCommand": {
+           "token": "token-39",
+           "request": "CONTINUATION_REQUEST_TYPE_WATCH_NEXT"
+          }
+         }
+        }
+       }
+      }
+     }
+    ],
+    "targetId": "token-3"
+   }
+  }
+ ],
+ "frameworkUpdates": {
+  "entityBatchUpdate": {
+   "mutations": [
+    {
+     "entityKey": "token-23",
+     "type": "ENTITY_MUTATION_TYPE_REPLACE",
+     "payload": {
+      "commentEntityPayload": {
+       "key": "token-23",
+       "properties": {
+        "commentId": "Text 25",
+        "content": {
+         "content": "xx x xxxxxx xxxx xxxxxxxx"
+        },
+        "publishedTime": "7 hours ago",
+        "replyLevel": 1,
+        "authorButtonA11y": "Text 32",
+        "toolbarStateKey": "token-24",
+        "translateButtonEntityKey": "token-40"
+       },
+       "author": {
+        "channelId": "UCchannel000000000000003",
+        "displayName": "Text 32",
+        "avatarThumbnailUrl": "https://yt3.ggpht.com/image-3",
+        "isVerified": false,
+        "isCurrentUser": false,
+        "isCreator": false,
+        "channelCommand": {
+         "innertubeCommand": {
+          "profileCardCommand": {
+           "profileOwnerExternalChannelId": "UCchannel000000000000003",
+           "profileCardContext": "token-41",
+           "shouldUseProfileBottomSheet": false
+          }
+         }
+        },
+        "isArtist": false,
+        "channelPageEndpoint": {
+         "innertubeCommand": {
+          "commandMetadata": {},
+          "browseEndpoint": {
+           "browseId": "UCchannel000000000000003",
+           "canonicalBaseUrl": "/@channel3"
+          }
+         }
+        },
+        "profileCardEndpoint": {
+         "innertubeCommand": {
+          "profileCardCommand": {
+           "profileOwnerExternalChannelId": "UCchannel000000000000003",
+           "profileCardContext": "token-41",
+           "shouldUseProfileBottomSheet": false
+          }
+         }
+        }
+       },
+       "toolbar": {
+        "likeCountLiked": "1",
+        "likeCountNotliked": "4",
+        "replyCount": "",
+        "likeButtonA11y": "Text 33",
+        "engagementToolbarStyle": {
+         "value": "ENGAGEMENT_TOOLBAR_STYLE_VALUE_DEFAULT"
+        },
+        "likeCountA11y": "Text 34",
+        "replyCountA11y": "Text 35",
+        "likeInactiveTooltip": "Text 17",
+        "likeActiveTooltip": "Text 18",
+        "dislikeInactiveTooltip": "Text 19",
+        "dislikeActiveTooltip": "Text 20",
+        "heartActiveTooltip": "Text 21"
+       },
+       "readMoreLogging": {}
+      }
+     }
+    },
+    {
+     "entityKey": "token-24",
+     "type": "ENTITY_MUTATION_TYPE_REPLACE",
+     "payload": {
+      "engagementToolbarStateEntityPayload": {
+       "key": "token-24",
+       "likeState": "TOOLBAR_LIKE_STATE_INDIFFERENT",
+       "heartState": "TOOLBAR_HEART_STATE_UNHEARTED"
+      }
+     }
+    },
+    {
+     "entityKey": "token-27",
+     "type": "ENTITY_MUTATION_TYPE_REPLACE",
+     "payload": {
+      "commentEntityPayload": {
+       "key": "token-27",
+       "properties": {
+        "commentId": "Text 26",
+        "content": {
+         "content": "xx x xxxxxxx xxxxxx"
+        },
+        "publishedTime": "2 hour ago",
+        "replyLevel": 1,
+        "authorButtonA11y": "Text 36",
+        "toolbarStateKey": "token-28",
+        "translateButtonEntityKey": "token-42"
+       },
+       "author": {
+        "channelId": "UCchannel000000000000004",
+        "displayName": "Text 36",
+        "avatarThumbnailUrl": "https://yt3.ggpht.com/image-4",
+        "isVerified": false,
+        "isCurrentUser": false,
+        "isCreator": false,
+        "channelCommand": {
+         "innertubeCommand": {
+          "profileCardCommand": {
+           "profileOwnerExternalChannelId": "UCchannel000000000000004",
+           "profileCardContext": "token-43",
+           "shouldUseProfileBottomSheet": false
+          }
+         }
+        },
+        "isArtist": false,
+        "channelPageEndpoint": {
+         "innertubeCommand": {
+          "commandMetadata": {},
+          "browseEndpoint": {
+           "browseId": "UCchannel000000000000004",
+           "canonicalBaseUrl": "/@channel4"
+          }
+         }
+        },
+        "profileCardEndpoint": {
+         "innertubeCommand": {
+          "profileCardCommand": {
+           "profileOwnerExternalChannelId": "UCchannel000000000000004",
+           "profileCardContext": "token-43",
+           "shouldUseProfileBottomSheet": false
+          }
+         }
+        }
+       },
+       "toolbar": {
+        "likeCountLiked": "1",
+        "likeCountNotliked": "4",
+        "replyCount": "",
+        "likeButtonA11y": "Text 33",
+        "engagementToolbarStyle": {
+         "value": "ENGAGEMENT_TOOLBAR_STYLE_VALUE_DEFAULT"
+        },
+        "likeCountA11y": "Text 34",
+        "replyCountA11y": "Text 35",
+        "likeInactiveTooltip": "Text 17",
+        "likeActiveTooltip": "Text 18",
+        "dislikeInactiveTooltip": "Text 19",
+        "dislikeActiveTooltip": "Text 20",
+        "heartActiveTooltip": "Text 21"
+       },
+       "readMoreLogging": {}
+      }
+     }
+    },
+    {
+     "entityKey": "token-28",
+     "type": "ENTITY_MUTATION_TYPE_REPLACE",
+     "payload": {
+      "engagementToolbarStateEntityPayload": {
+       "key": "token-28",
+       "likeState": "TOOLBAR_LIKE_STATE_INDIFFERENT",
+       "heartState": "TOOLBAR_HEART_STATE_UNHEARTED"
+      }
+     }
+    },
+    {
+     "entityKey": "token-35",
+     "type": "ENTITY_MUTATION_TYPE_REPLACE",
+     "payload": {
+      "commentEntityPayload": {
+       "key": "token-35",
+       "properties": {
+        "commentId": "Text 30",
+        "content": {
+         "content": "xx xxx xxx xxxxxxx"
+        },
+        "publishedTime": "5 hours ago",
+        "replyLevel": 1,
+        "authorButtonA11y": "Text 37",
+        "toolbarStateKey": "token-36",
+        "translateButtonEntityKey": "token-44"
+       },
+       "author": {
+        "channelId": "UCchannel000000000000005",
+        "displayName": "Text 37",
+        "avatarThumbnailUrl": "https://yt3.ggpht.com/image-5",
+        "isVerified": false,
+        "isCurrentUser": false,
+        "isCreator": false,
+        "channelCommand": {
+         "innertubeCommand": {
+          "profileCardCommand": {
+           "profileOwnerExternalChannelId": "UCchannel000000000000005",
+           "profileCardContext": "token-45",
+           "shouldUseProfileBottomSheet": false
+          }
+         }
+        },
+        "isArtist": false,
+        "channelPageEndpoint": {
+         "innertubeCommand": {
+          "commandMetadata": {},
+          "browseEndpoint": {
+           "browseId": "UCchannel000000000000005",
+           "canonicalBaseUrl": "/@channel5"
+          }
+         }
+        },
+        "profileCardEndpoint": {
+         "innertubeCommand": {
+          "profileCardCommand": {
+           "profileOwnerExternalChannelId": "UCchannel000000000000005",
+           "profileCardContext": "token-45",
+           "shouldUseProfileBottomSheet": false
+          }
+         }
+        }
+       },
+       "toolbar": {
+        "likeCountLiked": "6",
+        "likeCountNotliked": "2",
+        "replyCount": "",
+        "likeButtonA11y": "Text 38",
+        "engagementToolbarStyle": {
+         "value": "ENGAGEMENT_TOOLBAR_STYLE_VALUE_DEFAULT"
+        },
+        "likeCountA11y": "Text 39",
+        "replyCountA11y": "Text 40",
+        "likeInactiveTooltip": "Text 17",
+        "likeActiveTooltip": "Text 18",
+        "dislikeInactiveTooltip": "Text 19",
+        "dislikeActiveTooltip": "Text 20",
+        "heartActiveTooltip": "Text 21"
+       },
+       "readMoreLogging": {}
+      }
+     }
+    },
+    {
+     "entityKey": "token-36",
+     "type": "ENTITY_MUTATION_TYPE_REPLACE",
+     "payload": {
+      "engagementToolbarStateEntityPayload": {
+       "key": "token-36",
+       "likeState": "TOOLBAR_LIKE_STATE_INDIFFERENT",
+       "heartState": "TOOLBAR_HEART_STATE_UNHEARTED"
+      }
+     }
+    },
+    {
+     "entityKey": "token-31",
+     "type": "ENTITY_MUTATION_TYPE_REPLACE",
+     "payload": {
+      "commentEntityPayload": {
+       "key": "token-31",
+       "properties": {
+        "commentId": "Text 29",
+        "content": {
+         "content": "xxxxxxxxxxxxxxxx"
+        },
+        "publishedTime": "5 hours ago",
+        "replyLevel": 2,
+        "authorButtonA11y": "Text 41",
+        "toolbarStateKey": "token-32",
+        "translateButtonEntityKey": "token-46"
+       },
+       "author": {
+        "channelId": "UCchannel000000000000006",
+        "displayName": "Text 41",
+        "avatarThumbnailUrl": "https://yt3.ggpht.com/image-6",
+        "isVerified": false,
+        "isCurrentUser": false,
+        "isCreator": false,
+        "channelCommand": {
+         "innertubeCommand": {
+          "profileCardCommand": {
+           "profileOwnerExternalChannelId": "UCchannel000000000000006",
+           "profileCardContext": "token-47",
+           "shouldUseProfileBottomSheet": false
+          }
+         }
+        },
+        "isArtist": false,
+        "channelPageEndpoint": {
+         "innertubeCommand": {
+          "commandMetadata": {},
+          "browseEndpoint": {
+           "browseId": "UCchannel000000000000006",
+           "canonicalBaseUrl": "/@channel6"
+          }
+         }
+        },
+        "profileCardEndpoint": {
+         "innertubeCommand": {
+          "profileCardCommand": {
+           "profileOwnerExternalChannelId": "UCchannel000000000000006",
+           "profileCardContext": "token-47",
+           "shouldUseProfileBottomSheet": false
+          }
+         }
+        }
+       },
+       "toolbar": {
+        "likeCountLiked": "2",
+        "likeCountNotliked": " ",
+        "replyCount": "",
+        "likeButtonA11y": "Text 42",
+        "engagementToolbarStyle": {
+         "value": "ENGAGEMENT_TOOLBAR_STYLE_VALUE_DEFAULT"
+        },
+        "likeCountA11y": "Text 43",
+        "replyCountA11y": "Text 35",
+        "likeInactiveTooltip": "Text 17",
+        "likeActiveTooltip": "Text 18",
+        "dislikeInactiveTooltip": "Text 19",
+        "dislikeActiveTooltip": "Text 20",
+        "heartActiveTooltip": "Text 21"
+       },
+       "readMoreLogging": {}
+      }
+     }
+    },
+    {
+     "entityKey": "token-32",
+     "type": "ENTITY_MUTATION_TYPE_REPLACE",
+     "payload": {
+      "engagementToolbarStateEntityPayload": {
+       "key": "token-32",
+       "likeState": "TOOLBAR_LIKE_STATE_INDIFFERENT",
+       "heartState": "TOOLBAR_HEART_STATE_UNHEARTED"
+      }
+     }
+    }
+   ]
+  }
+ }
+}

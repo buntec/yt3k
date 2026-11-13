@@ -17,6 +17,8 @@ const FILES = {
   subscriptionsFeed: 'subscriptions-feed.json',
   channelLive: 'channel-live.json',
   channelHeader: 'channel-header.json',
+  comments: 'comments.json',
+  commentReplies: 'comment-replies.json',
 };
 
 const only = process.argv.slice(2);
