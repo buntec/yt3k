@@ -1,4 +1,5 @@
 import {
+  type RefObject,
   memo,
   useDeferredValue,
   useEffect,
@@ -69,22 +70,61 @@ export function SubscriptionsPage() {
     };
   }, []);
 
-  const visible = useMemo(() => {
+  const sorted = useMemo(() => {
     const keys = new Map(channels.map((c) => [c.id, recency(feeds[c.id])]));
     const direction = sort === 'oldest' ? -1 : 1;
-    return [...channels]
-      .sort((a, b) => {
-        // Channels still loading go last either way, rather than jump about
-        // at the top of the oldest first.
-        const isLoadingA = !feeds[a.id];
-        const isLoadingB = !feeds[b.id];
-        if (isLoadingA || isLoadingB) return Number(isLoadingA) - Number(isLoadingB);
-        return direction * compareRecency(keys.get(a.id)!, keys.get(b.id)!);
-      })
-      .filter(
+    return [...channels].sort((a, b) => {
+      // Channels still loading go last either way, rather than jump about at
+      // the top of the oldest first.
+      const isLoadingA = !feeds[a.id];
+      const isLoadingB = !feeds[b.id];
+      if (isLoadingA || isLoadingB) return Number(isLoadingA) - Number(isLoadingB);
+      return direction * compareRecency(keys.get(a.id)!, keys.get(b.id)!);
+    });
+  }, [channels, feeds, sort]);
+
+  // While scrolled down, a refresh leaves the channels where they are rather
+  // than move them from under the reader; back at the top, or with another
+  // sort, they take their new places.
+  const contentRef = useRef<HTMLDivElement>(null);
+  // The scroll event comes a moment after the scroll itself, so a refresh
+  // rendering in between also checks where the list actually is.
+  const isAtTop = useIsScrolledToTop(contentRef) && (contentRef.current?.scrollTop ?? 0) < 1;
+  // The order last shown, which a refresh keeps while scrolled down
+  const [shownOrder, setShownOrder] = useState<{ sort: Sort; ids: string[] }>({
+    sort,
+    ids: [],
+  });
+  let orderIds: string[];
+  if (isAtTop || shownOrder.sort !== sort || !shownOrder.ids.length) {
+    orderIds = sorted.map((c) => c.id);
+  } else {
+    // Subscribed to meanwhile go after the rest, each keeping its place there
+    // from then on.
+    const known = new Set(shownOrder.ids);
+    const added = sorted.filter((c) => !known.has(c.id)).map((c) => c.id);
+    orderIds = added.length ? [...shownOrder.ids, ...added] : shownOrder.ids;
+  }
+  if (isSameOrder(orderIds, shownOrder.ids)) {
+    // The same array, so the channels below aren't ordered and filtered anew
+    orderIds = shownOrder.ids;
+  }
+  if (shownOrder.sort !== sort || orderIds !== shownOrder.ids) {
+    setShownOrder({ sort, ids: orderIds });
+  }
+  const ordered = useMemo(() => {
+    const byId = new Map(sorted.map((c) => [c.id, c]));
+    // Without those unsubscribed from
+    return orderIds.flatMap((id) => byId.get(id) ?? []);
+  }, [sorted, orderIds]);
+
+  const visible = useMemo(
+    () =>
+      ordered.filter(
         (c) => includes(c.id) && matchesQuery(c, feeds[c.id], videosPerChannel, deferredQuery),
-      );
-  }, [channels, feeds, sort, videosPerChannel, deferredQuery, includes]);
+      ),
+    [ordered, feeds, videosPerChannel, deferredQuery, includes],
+  );
 
   // Only the first channels render, and more as the end of the list scrolls
   // into view: hundreds of them at once make the page slow to show. A new
@@ -104,7 +144,6 @@ export function SubscriptionsPage() {
   // Another group, e.g. picked by a channel's token far down the list, shows
   // from its top. Only on a change, as Activity runs effects again whenever
   // the page is shown.
-  const contentRef = useRef<HTMLDivElement>(null);
   const scrolledFilter = useRef(filter);
   useEffect(() => {
     if (scrolledFilter.current === filter) return;
@@ -222,6 +261,24 @@ const SORT_OPTIONS: { value: Sort; label: string }[] = [
   // To find the channels that went quiet
   { value: 'oldest', label: 'Least recently updated first' },
 ];
+
+function isSameOrder(a: string[], b: string[]) {
+  return a.length === b.length && a.every((id, i) => id === b[i]);
+}
+
+/** Whether the element is scrolled all the way up, or nearly. */
+function useIsScrolledToTop(ref: RefObject<HTMLElement | null>) {
+  const [isAtTop, setIsAtTop] = useState(true);
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    const check = () => setIsAtTop(element.scrollTop < 1);
+    check();
+    element.addEventListener('scroll', check, { passive: true });
+    return () => element.removeEventListener('scroll', check);
+  }, [ref]);
+  return isAtTop;
+}
 
 /** Shows more channels once the user scrolls near the end of the list. */
 function ShowMore({
