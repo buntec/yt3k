@@ -165,6 +165,12 @@ html {
   background: #000;
 }
 
+/* Full screen, rounded corners would leave the screen's corners to this page
+   rather than the video. */
+.player-frame:fullscreen {
+  border-radius: 0;
+}
+
 .card-thumbnail {
   position: relative;
   display: block;

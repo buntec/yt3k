@@ -309,7 +309,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
                     ref={frameRef}
                     className="player-frame"
                     src={current.src}
-                    title="YouTube video player"
+                    // Named without a title, which the browser would show as a
+                    // tooltip wherever this page shows around the video full screen
+                    aria-label="YouTube video player"
                     allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
                     onLoad={onFrameLoad}
                   />
