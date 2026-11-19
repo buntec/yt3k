@@ -87,20 +87,36 @@ export function SubscriptionsPage() {
   // than move them from under the reader; back at the top, or with another
   // sort, they take their new places.
   const contentRef = useRef<HTMLDivElement>(null);
-  const isAtTop = useIsScrolledToTop(contentRef);
-  const [frozen, setFrozen] = useState<{ sort: Sort; ids: string[] }>();
-  if (!isAtTop && frozen?.sort !== sort) {
-    setFrozen({ sort, ids: sorted.map((c) => c.id) });
-  } else if (isAtTop && frozen) {
-    setFrozen(undefined);
+  // The scroll event comes a moment after the scroll itself, so a refresh
+  // rendering in between also checks where the list actually is.
+  const isAtTop = useIsScrolledToTop(contentRef) && (contentRef.current?.scrollTop ?? 0) < 1;
+  // The order last shown, which a refresh keeps while scrolled down
+  const [shownOrder, setShownOrder] = useState<{ sort: Sort; ids: string[] }>({
+    sort,
+    ids: [],
+  });
+  let orderIds: string[];
+  if (isAtTop || shownOrder.sort !== sort || !shownOrder.ids.length) {
+    orderIds = sorted.map((c) => c.id);
+  } else {
+    // Subscribed to meanwhile go after the rest, each keeping its place there
+    // from then on.
+    const known = new Set(shownOrder.ids);
+    const added = sorted.filter((c) => !known.has(c.id)).map((c) => c.id);
+    orderIds = added.length ? [...shownOrder.ids, ...added] : shownOrder.ids;
+  }
+  if (isSameOrder(orderIds, shownOrder.ids)) {
+    // The same array, so the channels below aren't ordered and filtered anew
+    orderIds = shownOrder.ids;
+  }
+  if (shownOrder.sort !== sort || orderIds !== shownOrder.ids) {
+    setShownOrder({ sort, ids: orderIds });
   }
   const ordered = useMemo(() => {
-    if (isAtTop || frozen?.sort !== sort) return sorted;
-    // Subscribed to meanwhile go after the rest.
-    const position = new Map(frozen.ids.map((id, i) => [id, i]));
-    const at = (c: Channel) => position.get(c.id) ?? position.size;
-    return [...sorted].sort((a, b) => at(a) - at(b));
-  }, [sorted, isAtTop, frozen, sort]);
+    const byId = new Map(sorted.map((c) => [c.id, c]));
+    // Without those unsubscribed from
+    return orderIds.flatMap((id) => byId.get(id) ?? []);
+  }, [sorted, orderIds]);
 
   const visible = useMemo(
     () =>
@@ -245,6 +261,10 @@ const SORT_OPTIONS: { value: Sort; label: string }[] = [
   // To find the channels that went quiet
   { value: 'oldest', label: 'Least recently updated first' },
 ];
+
+function isSameOrder(a: string[], b: string[]) {
+  return a.length === b.length && a.every((id, i) => id === b[i]);
+}
 
 /** Whether the element is scrolled all the way up, or nearly. */
 function useIsScrolledToTop(ref: RefObject<HTMLElement | null>) {
