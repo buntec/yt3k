@@ -1,4 +1,5 @@
 import {
+  type RefObject,
   memo,
   useDeferredValue,
   useEffect,
@@ -69,22 +70,45 @@ export function SubscriptionsPage() {
     };
   }, []);
 
-  const visible = useMemo(() => {
+  const sorted = useMemo(() => {
     const keys = new Map(channels.map((c) => [c.id, recency(feeds[c.id])]));
     const direction = sort === 'oldest' ? -1 : 1;
-    return [...channels]
-      .sort((a, b) => {
-        // Channels still loading go last either way, rather than jump about
-        // at the top of the oldest first.
-        const isLoadingA = !feeds[a.id];
-        const isLoadingB = !feeds[b.id];
-        if (isLoadingA || isLoadingB) return Number(isLoadingA) - Number(isLoadingB);
-        return direction * compareRecency(keys.get(a.id)!, keys.get(b.id)!);
-      })
-      .filter(
+    return [...channels].sort((a, b) => {
+      // Channels still loading go last either way, rather than jump about at
+      // the top of the oldest first.
+      const isLoadingA = !feeds[a.id];
+      const isLoadingB = !feeds[b.id];
+      if (isLoadingA || isLoadingB) return Number(isLoadingA) - Number(isLoadingB);
+      return direction * compareRecency(keys.get(a.id)!, keys.get(b.id)!);
+    });
+  }, [channels, feeds, sort]);
+
+  // While scrolled down, a refresh leaves the channels where they are rather
+  // than move them from under the reader; back at the top, or with another
+  // sort, they take their new places.
+  const contentRef = useRef<HTMLDivElement>(null);
+  const isAtTop = useIsScrolledToTop(contentRef);
+  const [frozen, setFrozen] = useState<{ sort: Sort; ids: string[] }>();
+  if (!isAtTop && frozen?.sort !== sort) {
+    setFrozen({ sort, ids: sorted.map((c) => c.id) });
+  } else if (isAtTop && frozen) {
+    setFrozen(undefined);
+  }
+  const ordered = useMemo(() => {
+    if (isAtTop || frozen?.sort !== sort) return sorted;
+    // Subscribed to meanwhile go after the rest.
+    const position = new Map(frozen.ids.map((id, i) => [id, i]));
+    const at = (c: Channel) => position.get(c.id) ?? position.size;
+    return [...sorted].sort((a, b) => at(a) - at(b));
+  }, [sorted, isAtTop, frozen, sort]);
+
+  const visible = useMemo(
+    () =>
+      ordered.filter(
         (c) => includes(c.id) && matchesQuery(c, feeds[c.id], videosPerChannel, deferredQuery),
-      );
-  }, [channels, feeds, sort, videosPerChannel, deferredQuery, includes]);
+      ),
+    [ordered, feeds, videosPerChannel, deferredQuery, includes],
+  );
 
   // Only the first channels render, and more as the end of the list scrolls
   // into view: hundreds of them at once make the page slow to show. A new
@@ -104,7 +128,6 @@ export function SubscriptionsPage() {
   // Another group, e.g. picked by a channel's token far down the list, shows
   // from its top. Only on a change, as Activity runs effects again whenever
   // the page is shown.
-  const contentRef = useRef<HTMLDivElement>(null);
   const scrolledFilter = useRef(filter);
   useEffect(() => {
     if (scrolledFilter.current === filter) return;
@@ -222,6 +245,20 @@ const SORT_OPTIONS: { value: Sort; label: string }[] = [
   // To find the channels that went quiet
   { value: 'oldest', label: 'Least recently updated first' },
 ];
+
+/** Whether the element is scrolled all the way up, or nearly. */
+function useIsScrolledToTop(ref: RefObject<HTMLElement | null>) {
+  const [isAtTop, setIsAtTop] = useState(true);
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    const check = () => setIsAtTop(element.scrollTop < 1);
+    check();
+    element.addEventListener('scroll', check, { passive: true });
+    return () => element.removeEventListener('scroll', check);
+  }, [ref]);
+  return isAtTop;
+}
 
 /** Shows more channels once the user scrolls near the end of the list. */
 function ShowMore({
