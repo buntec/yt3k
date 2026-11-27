@@ -270,10 +270,12 @@ const VideoCard = memo(function VideoCard({
   const { channel } = video;
   // YouTube's own thumbnail URL is signed and now and then fails to load;
   // the plain one usually still does. Neither left, the card's background
-  // shows instead of a broken image.
+  // shows instead of a broken image. A refresh gives the card a new `video`,
+  // which tries both again, while showing more pages keeps it.
   const plain = `https://i.ytimg.com/vi/${video.id}/mqdefault.jpg`;
   const [thumbnail, onThumbnailError] = useArtwork(
     video.thumbnail === plain ? [plain] : [video.thumbnail, plain],
+    video,
   );
   return (
     <article>
