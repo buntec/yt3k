@@ -7,6 +7,8 @@ import comments from './__fixtures__/comments.json';
 import history from './__fixtures__/history.json';
 import historyContinuation from './__fixtures__/history-continuation.json';
 import home from './__fixtures__/home.json';
+import search from './__fixtures__/search.json';
+import searchContinuation from './__fixtures__/search-continuation.json';
 import homeContinuation from './__fixtures__/home-continuation.json';
 import subscriptions from './__fixtures__/subscriptions.json';
 import subscriptionsFeed from './__fixtures__/subscriptions-feed.json';
@@ -20,6 +22,7 @@ import {
   parseHomeContinuation,
   parseHomePage,
   parseLiveStreams,
+  parseSearchResults,
   parseSubscriptionsFeedLiveStreams,
   parseSubscriptionsPage,
   parseWatchLaterContinuation,
@@ -354,6 +357,93 @@ describe('parseHistoryContinuation', () => {
 
   it('returns nothing for an unrelated response', () => {
     expect(parseHistoryContinuation({})).toEqual({ videos: [], continuation: undefined });
+  });
+});
+
+describe('parseSearchResults', () => {
+  const { videos, continuation } = parseSearchResults(search);
+
+  /** The search fixture with its first result changed by `edit` */
+  function withFirstResult(edit: (renderer: any) => void) {
+    const data = structuredClone(search) as any;
+    edit(data.contents.sectionListRenderer.contents[0].itemSectionRenderer.contents[0].videoRenderer);
+    return parseSearchResults(data).videos;
+  }
+
+  it('reads the videos in result order', () => {
+    expect(videos.map((v) => v.id)).toEqual(['video000001', 'video000002', 'video000003']);
+  });
+
+  it('reads title, thumbnail, duration, channel, views and age', () => {
+    expect(videos[0]).toEqual({
+      id: 'video000001',
+      title: 'Text 1',
+      thumbnail: 'https://i.ytimg.com/vi/video000001/hqdefault.jpg',
+      duration: '12:52',
+      channel: {
+        title: 'Text 3',
+        url: 'https://www.youtube.com/@channel1',
+        avatar: 'https://yt3.ggpht.com/image-2',
+      },
+      details: [
+        { text: '12M', label: '12 million views', hasPlayIcon: true },
+        { text: '8y ago', hasPlayIcon: false },
+      ],
+      feedback: {},
+    });
+  });
+
+  it('reads the token for the next page', () => {
+    expect(continuation).toBe('token-20');
+  });
+
+  it('reads the next page', () => {
+    const more = parseSearchResults(searchContinuation);
+    expect(more.videos.map((v) => v.id)).toEqual(['video000004', 'video000005', 'video000006']);
+    expect(more.continuation).toBe('token-39');
+  });
+
+  it('leaves out Shorts the filter lets through', () => {
+    const viaReel = withFirstResult((r) => {
+      r.navigationEndpoint = { reelWatchEndpoint: { videoId: r.videoId } };
+    });
+    const viaUrl = withFirstResult((r) => {
+      r.navigationEndpoint.commandMetadata = {
+        webCommandMetadata: { url: `/shorts/${r.videoId}` },
+      };
+    });
+    for (const results of [viaReel, viaUrl]) {
+      expect(results.map((v) => v.id)).toEqual(['video000002', 'video000003']);
+    }
+  });
+
+  it('leaves out anything but videos, such as shelves', () => {
+    const data = structuredClone(search) as any;
+    data.contents.sectionListRenderer.contents[0].itemSectionRenderer.contents.unshift(
+      { shelfRenderer: { content: { verticalListRenderer: { items: [] } } } },
+      { channelRenderer: { channelId: 'UCchannel000000000000001' } },
+    );
+    expect(parseSearchResults(data).videos.map((v) => v.id)).toEqual([
+      'video000001',
+      'video000002',
+      'video000003',
+    ]);
+  });
+
+  it('marks live streams and counts their viewers', () => {
+    const [live] = withFirstResult((r) => {
+      delete r.lengthText;
+      delete r.publishedTimeText;
+      delete r.shortViewCountText;
+      r.viewCountText = { runs: [{ text: '1,234' }, { text: ' watching' }] };
+      r.badges = [{ metadataBadgeRenderer: { style: 'BADGE_STYLE_TYPE_LIVE_NOW', label: 'LIVE' } }];
+    });
+    expect(live?.duration).toBe('LIVE');
+    expect(live?.details).toEqual([{ text: '1,234 watching', hasPlayIcon: false }]);
+  });
+
+  it('finds nothing in a response without results', () => {
+    expect(parseSearchResults({})).toEqual({ videos: [], continuation: undefined });
   });
 });
 

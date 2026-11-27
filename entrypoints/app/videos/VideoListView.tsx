@@ -36,7 +36,8 @@ export interface VideoAction {
  * A page with a grid of videos from YouTube. `actions` gives each video's
  * menu; define it outside components, so cards don't re-render needlessly.
  * `start` is a side panel, and `include` with `filteredEmpty` a filter it
- * sets, such as Live's groups.
+ * sets, such as Live's groups. With `search`, the search bar searches
+ * YouTube on Enter, rather than filtering the videos loaded.
  */
 export function VideoListView({
   title,
@@ -47,6 +48,7 @@ export function VideoListView({
   start,
   include,
   filteredEmpty,
+  search,
 }: {
   title: string;
   list: VideoList;
@@ -56,13 +58,20 @@ export function VideoListView({
   start?: React.ReactNode;
   include?: (video: ListedVideo) => boolean;
   filteredEmpty?: { title: string; description?: string };
+  search?: { query: string; onSearch: (query: string) => void };
 }) {
   const { videos: loaded, continuation, loading, error, removalError, removals } = list.use();
   const videos = include ? loaded.filter(include) : loaded;
   const columns = useColumns();
   const status = loading === 'refresh' ? loadingText : (error ?? removalError);
-  const [query, setQuery] = useState('');
-  const deferredQuery = useDeferredValue(foldForSearch(query.trim()));
+  const [query, setQuery] = useState(search?.query ?? '');
+  // Back and Forward change the search shown, and with it the search bar.
+  const [shownSearch, setShownSearch] = useState(search?.query);
+  if (search && search.query !== shownSearch) {
+    setShownSearch(search.query);
+    setQuery(search.query);
+  }
+  const deferredQuery = useDeferredValue(search ? '' : foldForSearch(query.trim()));
   const searchRef = useRef<HTMLInputElement>(null);
   useSearchShortcut(searchRef);
   const matching = deferredQuery
@@ -87,14 +96,21 @@ export function VideoListView({
             <Heading level={1}>{title}</Heading>
             <TextInput
               ref={searchRef}
-              label="Search videos and channels"
+              label={search ? 'Search YouTube' : 'Search videos and channels'}
               isLabelHidden
-              placeholder="Search videos and channels"
+              placeholder={search ? 'Search YouTube' : 'Search videos and channels'}
               value={query}
               onChange={setQuery}
+              onEnter={
+                search &&
+                (() => {
+                  if (query.trim()) search.onSearch(query.trim());
+                })
+              }
+              hasAutoFocus={search && !search.query}
               hasClear
               autoComplete="off"
-              width={280}
+              width={search ? 400 : 280}
             />
             <StackItem size="fill">
               <span className={error || removalError ? 'status error' : 'status'} role="status">

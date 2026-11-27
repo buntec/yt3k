@@ -642,6 +642,76 @@ function parseHistoryItems(items: unknown): VideoListPage {
   };
 }
 
+// YouTube's "Type: Video" search filter, which leaves out channels,
+// playlists, shelves and most Shorts
+const VIDEOS_ONLY = 'EgIQAQ%3D%3D';
+
+/** The first page of videos YouTube finds for `query`, without Shorts. */
+export async function searchVideos(query: string): Promise<VideoListPage> {
+  const { status, data } = await innertubeRequest('search', { query, params: VIDEOS_ONLY });
+  if (status !== 200) throw new Error(`Searching failed (${status})`);
+  return parseSearchResults(data);
+}
+
+/** The page of search results that follows the one `continuation` came with. */
+export async function searchMoreVideos(continuation: string): Promise<VideoListPage> {
+  const { status, data } = await innertubeRequest('search', { continuation });
+  if (status !== 200) throw new Error(`Loading more results failed (${status})`);
+  return parseSearchResults(data);
+}
+
+/**
+ * The videos in YouTube's API response for a page of search results, the
+ * first or a later one. Results come in sections; anything but a video in
+ * them, such as a shelf, is left out, and so are the Shorts the filter lets
+ * through.
+ */
+export function parseSearchResults(data: unknown): VideoListPage {
+  const items: any[] = [
+    ...(findAll(data, 'sectionListRenderer')[0]?.contents ?? []),
+    ...findAll(data, 'continuationItems').flat(),
+  ];
+  const videos = items
+    .flatMap((item) => item.itemSectionRenderer?.contents ?? [])
+    .map((item: any) => item.videoRenderer)
+    .filter((renderer: any) => renderer?.videoId && !isShort(renderer))
+    .map(parseSearchVideo);
+  return {
+    videos,
+    continuation: findAll(
+      items.filter((item) => item.continuationItemRenderer),
+      'continuationCommand',
+    ).at(-1)?.token,
+  };
+}
+
+function isShort(renderer: any): boolean {
+  const endpoint = renderer.navigationEndpoint;
+  return (
+    Boolean(endpoint?.reelWatchEndpoint) ||
+    findAll(endpoint, 'url').some((url) => typeof url === 'string' && url.startsWith('/shorts/')) ||
+    findAll(renderer.thumbnailOverlays, 'style').includes('SHORTS')
+  );
+}
+
+/** A search result: like the older entries in History, with its age, and live streams marked. */
+function parseSearchVideo(renderer: any): ListedVideo {
+  const video = parseVideoRenderer(renderer);
+  const isLive = findAll(renderer.badges, 'style').includes('BADGE_STYLE_TYPE_LIVE_NOW');
+  // Live streams count viewers in runs ("1.2K watching"), not views.
+  const views = renderer.shortViewCountText ?? renderer.viewCountText;
+  const viewers = isLive && !views?.simpleText && textOf(views);
+  const age = textOf(renderer.publishedTimeText);
+  return {
+    ...video,
+    duration: video.duration ?? (isLive ? 'LIVE' : undefined),
+    details: [
+      ...(viewers ? [{ text: viewers, hasPlayIcon: false }] : video.details),
+      ...(age ? [{ text: age, hasPlayIcon: false }] : []),
+    ],
+  };
+}
+
 function parseVideoRenderer(renderer: any): ListedVideo {
   const byline = renderer.shortBylineText?.runs?.[0];
   const views = renderer.shortViewCountText;

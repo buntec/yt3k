@@ -4,7 +4,8 @@
 // Keeps a few items of each kind from the Home page, the next page of Home,
 // the subscriptions page, a subscribed channel's Videos tab, Watch later,
 // History (and its next part), the subscriptions feed, a live channel's
-// Live tab and the comments on a video (and replies to one), then replaces
+// Live tab, the comments on a video (and replies to one) and a search (and
+// its next page), then replaces
 // titles, names, IDs,
 // URLs and tokens with placeholders and scrambles the digits of counts, ages
 // and durations. Clipboard writes need a click, so it adds a button for that.
@@ -335,6 +336,50 @@ async function captureComments(homeItems) {
   return fallback ?? {};
 }
 
+// The query of the search captured: common enough to have pages of results.
+const SEARCH_QUERY = 'piano tutorial';
+// YouTube's "Type: Video" filter, as searchVideos() in utils/youtube.ts asks for it
+const VIDEOS_ONLY = 'EgIQAQ%3D%3D';
+
+/**
+ * A few results of each kind from a page of search results: videos, a live
+ * stream, and anything else (shelves, channels), with the token for more.
+ */
+function pickSearchItems(items) {
+  return items.map((i) => {
+    if (!i.itemSectionRenderer) return i;
+    const contents = i.itemSectionRenderer.contents;
+    const isLive = (c) =>
+      findAll(c.videoRenderer?.badges, 'style').includes('BADGE_STYLE_TYPE_LIVE_NOW');
+    const picks = new Set([
+      ...contents.filter((c) => c.videoRenderer && !isLive(c)).slice(0, 3),
+      contents.find(isLive),
+      ...[...new Set(contents.map((c) => Object.keys(c)[0]))]
+        .filter((kind) => kind !== 'videoRenderer')
+        .map((kind) => contents.find((c) => c[kind])),
+    ]);
+    return { itemSectionRenderer: { ...i.itemSectionRenderer, contents: contents.filter((c) => picks.has(c)) } };
+  });
+}
+
+async function captureSearch() {
+  const data = await innertubeRequest('search', { query: SEARCH_QUERY, params: VIDEOS_ONLY });
+  const items = findAll(data, 'sectionListRenderer')[0].contents;
+  const more = await innertubeRequest('search', {
+    continuation: findAll(items, 'continuationCommand').at(-1).token,
+  });
+  return {
+    search: { contents: { sectionListRenderer: { contents: pickSearchItems(items) } } },
+    searchContinuation: {
+      onResponseReceivedCommands: more.onResponseReceivedCommands.map((command) => {
+        const append = command.appendContinuationItemsAction;
+        if (!append) return command;
+        return { appendContinuationItemsAction: { ...append, continuationItems: pickSearchItems(append.continuationItems) } };
+      }),
+    },
+  };
+}
+
 async function capture() {
   const homeData = initialData(await (await fetch('/', { credentials: 'include' })).text());
   const grid = findAll(homeData, 'richGridRenderer')[0];
@@ -474,6 +519,7 @@ async function capture() {
   }
 
   const { comments, commentReplies } = await captureComments(grid.contents);
+  const { search, searchContinuation } = await captureSearch();
 
   return anonymize({
     home,
@@ -488,6 +534,8 @@ async function capture() {
     channelHeader,
     comments,
     commentReplies,
+    search,
+    searchContinuation,
   });
 }
 

@@ -18,6 +18,7 @@ import { ROUTES, type Route, routeHref, useRoute } from './router';
 import { DriveSyncButton } from './sync/DriveSyncDialog';
 import { SubscriptionsPage } from './subscriptions/SubscriptionsPage';
 import { WatchLaterPage } from './watch-later/WatchLaterPage';
+import { SearchPage } from './youtube-search/SearchPage';
 import { type ThemeMode, setThemeMode, useThemeMode } from './theme';
 import { SharedTooltip } from './tooltip';
 
@@ -28,6 +29,7 @@ const PAGES: Record<Route, () => React.ReactNode> = {
   subscriptions: SubscriptionsPage,
   live: LivePage,
   feed: FeedPage,
+  search: SearchPage,
   'watch-later': WatchLaterPage,
   history: HistoryPage,
   podcasts: PodcastsPage,
