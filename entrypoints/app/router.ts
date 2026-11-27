@@ -21,7 +21,18 @@ const DEFAULT_ROUTE: Route = 'subscriptions';
 let lastSearchQuery = '';
 
 export function routeHref(route: Route) {
-  return route === 'search' ? searchHref(lastSearchQuery) : `#/${route}`;
+  return `#/${route}`;
+}
+
+/**
+ * Where links to the Search page go: the last search shown, which is the
+ * current one on Search itself.
+ */
+export function useSearchPageHref(): string {
+  return useSyncExternalStore(subscribe, () => {
+    if (currentRoute() === 'search') lastSearchQuery = currentSearchQuery();
+    return searchHref(lastSearchQuery);
+  });
 }
 
 /** The Search page with YouTube's results for `query`, e.g. #/search?q=piano */
@@ -53,11 +64,3 @@ function currentSearchQuery(): string {
   const search = location.hash.split('?')[1] ?? '';
   return new URLSearchParams(search).get('q')?.trim() ?? '';
 }
-
-function rememberSearchQuery() {
-  if (currentRoute() === 'search') lastSearchQuery = currentSearchQuery();
-}
-
-// Registered before any component subscribes, so it runs before they render.
-rememberSearchQuery();
-window.addEventListener('hashchange', rememberSearchQuery);

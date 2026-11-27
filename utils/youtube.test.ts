@@ -439,6 +439,7 @@ describe('parseSearchResults', () => {
       r.badges = [{ metadataBadgeRenderer: { style: 'BADGE_STYLE_TYPE_LIVE_NOW', label: 'LIVE' } }];
     });
     expect(live?.duration).toBe('LIVE');
+    expect(live?.isLive).toBe(true);
     expect(live?.details).toEqual([{ text: '1,234 watching', hasPlayIcon: false }]);
   });
 

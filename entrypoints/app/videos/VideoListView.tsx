@@ -17,7 +17,7 @@ import { useToast } from '@astryxdesign/core/Toast';
 import { VisuallyHidden } from '@astryxdesign/core/VisuallyHidden';
 import type { ListedVideo, MetadataPart } from '@/utils/youtube';
 import { useArtwork } from '../artwork';
-import { BackToTop } from '../backToTop';
+import { BackToTop, findScroller } from '../backToTop';
 import { PlayableLink } from '../player';
 import { foldForSearch, useSearchShortcut } from '../search';
 import { COLUMN_CHOICES, type Columns, setColumns, useColumns } from './columns';
@@ -71,6 +71,17 @@ export function VideoListView({
     setShownSearch(search.query);
     setQuery(search.query);
   }
+  const submitSearch = () => {
+    if (search && query.trim()) search.onSearch(query.trim());
+  };
+  // Another search's results start at the top, even when they were kept
+  // from before and replace the ones shown in place.
+  const contentRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (shownSearch === undefined) return;
+    const scroller = findScroller(contentRef.current);
+    if (scroller) scroller.scrollTop = 0;
+  }, [shownSearch]);
   const deferredQuery = useDeferredValue(search ? '' : foldForSearch(query.trim()));
   const searchRef = useRef<HTMLInputElement>(null);
   useSearchShortcut(searchRef);
@@ -101,17 +112,13 @@ export function VideoListView({
               placeholder={search ? 'Search YouTube' : 'Search videos and channels'}
               value={query}
               onChange={setQuery}
-              onEnter={
-                search &&
-                (() => {
-                  if (query.trim()) search.onSearch(query.trim());
-                })
-              }
+              onEnter={search && submitSearch}
               hasAutoFocus={search && !search.query}
               hasClear
               autoComplete="off"
               width={search ? 400 : 280}
             />
+            {search && <Button label="Search" variant="primary" onClick={submitSearch} />}
             <StackItem size="fill">
               <span className={error || removalError ? 'status error' : 'status'} role="status">
                 <Text type="supporting" color="inherit">
@@ -136,8 +143,10 @@ export function VideoListView({
         </LayoutHeader>
       }
       content={
-        <LayoutContent padding={6}>
-          {videos.length === 0 ? (
+        <LayoutContent ref={contentRef} padding={6}>
+          {/* A page can have nothing to show, e.g. only Shorts, and still
+              have more after it, which loading more then finds. */}
+          {videos.length === 0 && !continuation ? (
             loading === 'idle' &&
             !error &&
             (loaded.length > 0 && filteredEmpty ? (
@@ -339,6 +348,9 @@ const VideoCard = memo(function VideoCard({
                     {video.title}
                   </Text>
                 </span>
+                {/* The badge saying so is on the thumbnail, which screen
+                    readers skip. */}
+                {video.isLive && <VisuallyHidden>, live now</VisuallyHidden>}
               </PlayableLink>
               {channel &&
                 (channel.url ? (

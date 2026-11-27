@@ -14,7 +14,7 @@ import { HistoryPage } from './history/HistoryPage';
 import { LivePage } from './live/LivePage';
 import { PlayerProvider } from './player';
 import { PodcastsPage } from './podcasts/PodcastsPage';
-import { ROUTES, type Route, routeHref, useRoute } from './router';
+import { ROUTES, type Route, routeHref, useRoute, useSearchPageHref } from './router';
 import { DriveSyncButton } from './sync/DriveSyncDialog';
 import { SubscriptionsPage } from './subscriptions/SubscriptionsPage';
 import { WatchLaterPage } from './watch-later/WatchLaterPage';
@@ -37,6 +37,7 @@ const PAGES: Record<Route, () => React.ReactNode> = {
 
 export function App() {
   const route = useRoute();
+  const searchPageHref = useSearchPageHref();
   const mode = useThemeMode();
   const autoplay = useAutoplay();
   const Page = PAGES[route];
@@ -70,7 +71,7 @@ export function App() {
                 <TopNavItem
                   key={r}
                   label={ROUTES[r]}
-                  href={routeHref(r)}
+                  href={r === 'search' ? searchPageHref : routeHref(r)}
                   isSelected={r === route}
                 />
               ))}

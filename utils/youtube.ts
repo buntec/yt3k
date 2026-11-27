@@ -30,6 +30,8 @@ export interface ListedVideo {
   thumbnail: string;
   /** Badge on the thumbnail, e.g. "21:52" or "LIVE" */
   duration?: string;
+  /** Live now, which `duration` shows only on the thumbnail (Search only) */
+  isLive?: boolean;
   /** Collaborations list several channels in `title` but link the first */
   channel?: { id?: string; title: string; url?: string; avatar?: string };
   /** What YouTube lists after the channel name, e.g. view count and age */
@@ -705,6 +707,7 @@ function parseSearchVideo(renderer: any): ListedVideo {
   return {
     ...video,
     duration: video.duration ?? (isLive ? 'LIVE' : undefined),
+    ...(isLive && { isLive }),
     details: [
       ...(viewers ? [{ text: viewers, hasPlayIcon: false }] : video.details),
       ...(age ? [{ text: age, hasPlayIcon: false }] : []),
