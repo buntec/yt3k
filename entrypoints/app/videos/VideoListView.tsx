@@ -16,6 +16,7 @@ import { TextInput } from '@astryxdesign/core/TextInput';
 import { useToast } from '@astryxdesign/core/Toast';
 import { VisuallyHidden } from '@astryxdesign/core/VisuallyHidden';
 import type { ListedVideo, MetadataPart } from '@/utils/youtube';
+import { useArtwork } from '../artwork';
 import { BackToTop } from '../backToTop';
 import { PlayableLink } from '../player';
 import { foldForSearch, useSearchShortcut } from '../search';
@@ -267,6 +268,13 @@ const VideoCard = memo(function VideoCard({
   actions: (video: ListedVideo) => VideoAction[];
 }) {
   const { channel } = video;
+  // YouTube's own thumbnail URL is signed and now and then fails to load;
+  // the plain one usually still does. Neither left, the card's background
+  // shows instead of a broken image.
+  const plain = `https://i.ytimg.com/vi/${video.id}/mqdefault.jpg`;
+  const [thumbnail, onThumbnailError] = useArtwork(
+    video.thumbnail === plain ? [plain] : [video.thumbnail, plain],
+  );
   return (
     <article>
       <VStack gap={3}>
@@ -280,7 +288,9 @@ const VideoCard = memo(function VideoCard({
           data-tooltip={video.title}
         >
           <AspectRatio ratio={16 / 9} fit="cover">
-            <img src={video.thumbnail} alt="" loading="lazy" />
+            {thumbnail && (
+              <img src={thumbnail} alt="" loading="lazy" onError={onThumbnailError} />
+            )}
           </AspectRatio>
           {video.duration && <span className="duration">{video.duration}</span>}
           {video.progress ? (
