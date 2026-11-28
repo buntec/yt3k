@@ -32,6 +32,8 @@ export interface ListedVideo {
   duration?: string;
   /** Live now, which `duration` shows only on the thumbnail (Search only) */
   isLive?: boolean;
+  /** A stream or premiere yet to start, which `duration` shows only on the thumbnail (Search only) */
+  isUpcoming?: boolean;
   /** Collaborations list several channels in `title` but link the first */
   channel?: { id?: string; title: string; url?: string; avatar?: string };
   /** What YouTube lists after the channel name, e.g. view count and age */
@@ -696,23 +698,54 @@ function isShort(renderer: any): boolean {
   );
 }
 
-/** A search result: like the older entries in History, with its age, and live streams marked. */
+/**
+ * A search result: like the older entries in History, with its age, and
+ * live and upcoming streams marked.
+ */
 function parseSearchVideo(renderer: any): ListedVideo {
   const video = parseVideoRenderer(renderer);
   const isLive = findAll(renderer.badges, 'style').includes('BADGE_STYLE_TYPE_LIVE_NOW');
-  // Live streams count viewers in runs ("1.2K watching"), not views.
+  const upcoming = renderer.upcomingEventData;
+  // Live and upcoming streams count people in runs ("1.2K watching", "35
+  // waiting"), not views in simpleText.
   const views = renderer.shortViewCountText ?? renderer.viewCountText;
-  const viewers = isLive && !views?.simpleText && textOf(views);
+  const people = (isLive || upcoming) && !views?.simpleText && textOf(views);
   const age = textOf(renderer.publishedTimeText);
+  const startsAt = upcoming && upcomingStart(upcoming);
   return {
     ...video,
-    duration: video.duration ?? (isLive ? 'LIVE' : undefined),
+    duration: video.duration ?? (isLive ? 'LIVE' : upcoming ? upcomingBadge(renderer) : undefined),
     ...(isLive && { isLive }),
+    ...(upcoming && { isUpcoming: true }),
     details: [
-      ...(viewers ? [{ text: viewers, hasPlayIcon: false }] : video.details),
+      ...(people ? [{ text: people, hasPlayIcon: false }] : video.details),
       ...(age ? [{ text: age, hasPlayIcon: false }] : []),
+      ...(startsAt ? [{ text: startsAt, hasPlayIcon: false }] : []),
     ],
   };
+}
+
+/** The badge YouTube puts on an upcoming stream's thumbnail, in the user's language */
+function upcomingBadge(renderer: any): string {
+  const overlay = findAll(renderer.thumbnailOverlays, 'thumbnailOverlayTimeStatusRenderer').find(
+    (o) => o.style === 'UPCOMING',
+  );
+  return textOf(overlay?.text) || 'Upcoming';
+}
+
+/**
+ * When an upcoming stream starts, as YouTube words it ("Premieres
+ * 12/24/26, 6:00 PM"), with the date that its text leaves out filled in.
+ */
+function upcomingStart(upcoming: any): string | undefined {
+  const seconds = Number(upcoming.startTime);
+  if (!Number.isFinite(seconds) || seconds <= 0) return undefined;
+  const date = new Date(seconds * 1000).toLocaleString(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
+  const text = textOf(upcoming.upcomingEventText);
+  return text.includes('DATE_PLACEHOLDER') ? text.replace('DATE_PLACEHOLDER', date) : date;
 }
 
 function parseVideoRenderer(renderer: any): ListedVideo {

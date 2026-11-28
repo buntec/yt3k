@@ -443,6 +443,34 @@ describe('parseSearchResults', () => {
     expect(live?.details).toEqual([{ text: '1,234 watching', hasPlayIcon: false }]);
   });
 
+  it('marks upcoming streams, with who is waiting and when they start', () => {
+    const startTime = 1_800_000_000;
+    const [upcoming] = withFirstResult((r) => {
+      delete r.lengthText;
+      delete r.publishedTimeText;
+      delete r.shortViewCountText;
+      r.viewCountText = { runs: [{ text: '35' }, { text: ' waiting' }] };
+      r.upcomingEventData = {
+        startTime: String(startTime),
+        upcomingEventText: { runs: [{ text: 'Premieres ' }, { text: 'DATE_PLACEHOLDER' }] },
+      };
+      r.thumbnailOverlays = [
+        { thumbnailOverlayTimeStatusRenderer: { text: { runs: [{ text: 'UPCOMING' }] }, style: 'UPCOMING' } },
+      ];
+    });
+    const date = new Date(startTime * 1000).toLocaleString(undefined, {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    });
+    expect(upcoming?.duration).toBe('UPCOMING');
+    expect(upcoming?.isUpcoming).toBe(true);
+    expect(upcoming?.isLive).toBeUndefined();
+    expect(upcoming?.details).toEqual([
+      { text: '35 waiting', hasPlayIcon: false },
+      { text: `Premieres ${date}`, hasPlayIcon: false },
+    ]);
+  });
+
   it('finds nothing in a response without results', () => {
     expect(parseSearchResults({})).toEqual({ videos: [], continuation: undefined });
   });

@@ -71,17 +71,23 @@ export function VideoListView({
     setShownSearch(search.query);
     setQuery(search.query);
   }
-  const submitSearch = () => {
-    if (search && query.trim()) search.onSearch(query.trim());
-  };
   // Another search's results start at the top, even when they were kept
   // from before and replace the ones shown in place.
   const contentRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (shownSearch === undefined) return;
+  const scrollToTop = () => {
     const scroller = findScroller(contentRef.current);
     if (scroller) scroller.scrollTop = 0;
+  };
+  useEffect(() => {
+    if (shownSearch !== undefined) scrollToTop();
   }, [shownSearch]);
+  const submitSearch = () => {
+    const newQuery = query.trim();
+    if (!search || !newQuery) return;
+    // The same search again replaces its results, which start at the top too.
+    if (newQuery === search.query) scrollToTop();
+    search.onSearch(newQuery);
+  };
   const deferredQuery = useDeferredValue(search ? '' : foldForSearch(query.trim()));
   const searchRef = useRef<HTMLInputElement>(null);
   useSearchShortcut(searchRef);
@@ -351,6 +357,7 @@ const VideoCard = memo(function VideoCard({
                 {/* The badge saying so is on the thumbnail, which screen
                     readers skip. */}
                 {video.isLive && <VisuallyHidden>, live now</VisuallyHidden>}
+                {video.isUpcoming && <VisuallyHidden>, upcoming</VisuallyHidden>}
               </PlayableLink>
               {channel &&
                 (channel.url ? (
