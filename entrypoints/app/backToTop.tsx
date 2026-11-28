@@ -21,11 +21,7 @@ export function BackToTop({ scrollerRef }: { scrollerRef?: React.RefObject<HTMLE
       setScroller(scrollerRef.current);
       return;
     }
-    let el = ref.current?.parentElement ?? null;
-    while (el && !['auto', 'scroll'].includes(getComputedStyle(el).overflowY)) {
-      el = el.parentElement;
-    }
-    setScroller(el);
+    setScroller(findScroller(ref.current?.parentElement ?? null));
   }, [scrollerRef]);
 
   useEffect(() => {
@@ -57,4 +53,12 @@ export function BackToTop({ scrollerRef }: { scrollerRef?: React.RefObject<HTMLE
       )}
     </div>
   );
+}
+
+/** `el` if it scrolls, else the nearest element around it that does */
+export function findScroller(el: HTMLElement | null): HTMLElement | null {
+  while (el && !['auto', 'scroll'].includes(getComputedStyle(el).overflowY)) {
+    el = el.parentElement;
+  }
+  return el;
 }

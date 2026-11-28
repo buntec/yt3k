@@ -17,7 +17,7 @@ import { useToast } from '@astryxdesign/core/Toast';
 import { VisuallyHidden } from '@astryxdesign/core/VisuallyHidden';
 import type { ListedVideo, MetadataPart } from '@/utils/youtube';
 import { useArtwork } from '../artwork';
-import { BackToTop } from '../backToTop';
+import { BackToTop, findScroller } from '../backToTop';
 import { PlayableLink } from '../player';
 import { foldForSearch, useSearchShortcut } from '../search';
 import { COLUMN_CHOICES, type Columns, setColumns, useColumns } from './columns';
@@ -36,7 +36,8 @@ export interface VideoAction {
  * A page with a grid of videos from YouTube. `actions` gives each video's
  * menu; define it outside components, so cards don't re-render needlessly.
  * `start` is a side panel, and `include` with `filteredEmpty` a filter it
- * sets, such as Live's groups.
+ * sets, such as Live's groups. With `search`, the search bar searches
+ * YouTube on Enter, rather than filtering the videos loaded.
  */
 export function VideoListView({
   title,
@@ -47,6 +48,7 @@ export function VideoListView({
   start,
   include,
   filteredEmpty,
+  search,
 }: {
   title: string;
   list: VideoList;
@@ -56,13 +58,37 @@ export function VideoListView({
   start?: React.ReactNode;
   include?: (video: ListedVideo) => boolean;
   filteredEmpty?: { title: string; description?: string };
+  search?: { query: string; onSearch: (query: string) => void };
 }) {
   const { videos: loaded, continuation, loading, error, removalError, removals } = list.use();
   const videos = include ? loaded.filter(include) : loaded;
   const columns = useColumns();
   const status = loading === 'refresh' ? loadingText : (error ?? removalError);
-  const [query, setQuery] = useState('');
-  const deferredQuery = useDeferredValue(foldForSearch(query.trim()));
+  const [query, setQuery] = useState(search?.query ?? '');
+  // Back and Forward change the search shown, and with it the search bar.
+  const [shownSearch, setShownSearch] = useState(search?.query);
+  if (search && search.query !== shownSearch) {
+    setShownSearch(search.query);
+    setQuery(search.query);
+  }
+  // Another search's results start at the top, even when they were kept
+  // from before and replace the ones shown in place.
+  const contentRef = useRef<HTMLDivElement>(null);
+  const scrollToTop = () => {
+    const scroller = findScroller(contentRef.current);
+    if (scroller) scroller.scrollTop = 0;
+  };
+  useEffect(() => {
+    if (shownSearch !== undefined) scrollToTop();
+  }, [shownSearch]);
+  const submitSearch = () => {
+    const newQuery = query.trim();
+    if (!search || !newQuery) return;
+    // The same search again replaces its results, which start at the top too.
+    if (newQuery === search.query) scrollToTop();
+    search.onSearch(newQuery);
+  };
+  const deferredQuery = useDeferredValue(search ? '' : foldForSearch(query.trim()));
   const searchRef = useRef<HTMLInputElement>(null);
   useSearchShortcut(searchRef);
   const matching = deferredQuery
@@ -87,15 +113,18 @@ export function VideoListView({
             <Heading level={1}>{title}</Heading>
             <TextInput
               ref={searchRef}
-              label="Search videos and channels"
+              label={search ? 'Search YouTube' : 'Search videos and channels'}
               isLabelHidden
-              placeholder="Search videos and channels"
+              placeholder={search ? 'Search YouTube' : 'Search videos and channels'}
               value={query}
               onChange={setQuery}
+              onEnter={search && submitSearch}
+              hasAutoFocus={search && !search.query}
               hasClear
               autoComplete="off"
-              width={280}
+              width={search ? 400 : 280}
             />
+            {search && <Button label="Search" variant="primary" onClick={submitSearch} />}
             <StackItem size="fill">
               <span className={error || removalError ? 'status error' : 'status'} role="status">
                 <Text type="supporting" color="inherit">
@@ -120,8 +149,10 @@ export function VideoListView({
         </LayoutHeader>
       }
       content={
-        <LayoutContent padding={6}>
-          {videos.length === 0 ? (
+        <LayoutContent ref={contentRef} padding={6}>
+          {/* A page can have nothing to show, e.g. only Shorts, and still
+              have more after it, which loading more then finds. */}
+          {videos.length === 0 && !continuation ? (
             loading === 'idle' &&
             !error &&
             (loaded.length > 0 && filteredEmpty ? (
@@ -323,6 +354,10 @@ const VideoCard = memo(function VideoCard({
                     {video.title}
                   </Text>
                 </span>
+                {/* The badge saying so is on the thumbnail, which screen
+                    readers skip. */}
+                {video.isLive && <VisuallyHidden>, live now</VisuallyHidden>}
+                {video.isUpcoming && <VisuallyHidden>, upcoming</VisuallyHidden>}
               </PlayableLink>
               {channel &&
                 (channel.url ? (

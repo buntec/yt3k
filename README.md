@@ -10,17 +10,18 @@ of its own, signed in with the YouTube account you use in that browser.
 - **Live**: live streams from your subscriptions, refreshed every minute.
 - **Feed**: YouTube's Home recommendations without Shorts or shelves, with **Not
   interested** and **Don't recommend channel**.
+- **Search**: YouTube's search results, videos only and without Shorts.
 - **Watch later** and **History** (by day, no Shorts, entries removable).
 - **Podcasts**: the newest episodes of podcasts you follow by RSS, on YouTube or not.
   Search Apple's directory, paste a feed or Apple Podcasts link, or import and export
   OPML. Episodes play at your chosen speed, resume where you left off, and respond to
   media keys.
 
-Every tab has search (`/`), and any video can be added to or removed from Watch
-later. Videos play in an embedded player, with their comments below, that
-minimizes to a corner while you browse; a time in a comment plays the video from
-there. **Autoplay** is off by default, since YouTube leaves autoplayed videos out of
-your history.
+The other tabs have a search bar (`/`) that filters their videos, and any video can
+be added to or removed from Watch later. Videos play in an embedded player, with
+their comments below, that minimizes to a corner while you browse; a time in a
+comment plays the video from there. **Autoplay** is off by default, since YouTube
+leaves autoplayed videos out of your history.
 
 ## Install
 

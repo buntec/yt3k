@@ -19,6 +19,8 @@ const FILES = {
   channelHeader: 'channel-header.json',
   comments: 'comments.json',
   commentReplies: 'comment-replies.json',
+  search: 'search.json',
+  searchContinuation: 'search-continuation.json',
 };
 
 const only = process.argv.slice(2);

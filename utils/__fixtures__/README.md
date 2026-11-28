@@ -24,6 +24,9 @@ random, and colors taken from thumbnails are left out.
   Home, with its header, and the video's ID; comment texts keep only their
   spaces, every other character becoming `x`, so links stay where they were
 - `comment-replies.json`: YouTube's API response for the replies to one of them
+- `search.json`: YouTube's API response for a search for videos only (the query
+  is in `capture.js`), its results part
+- `search-continuation.json`: YouTube's API response for its next page
 - `podcast-feed.xml`: a made-up podcast RSS feed for `utils/podcast.test.ts`, not
   captured: it has the parts real feeds have, and some they commonly get wrong
 
